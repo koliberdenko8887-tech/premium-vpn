@@ -95,6 +95,10 @@ a = s.index("  // ---- Settings: every option of Happ, grouped by section ----")
 b = s.index('  var sect="conn",built="",fields=[];')
 s = s[:a] + read("phone", "sect.js") + s[b:]
 
+rep('  var sect="conn",built="",fields=[];', '  var sect="look",built="",fields=[];')  # «Оформление» comes first on the phone
+rep('try{sect=localStorage.getItem("pvSect")||"conn"}catch(e){}', 'try{sect=localStorage.getItem("pvSect2")||"look"}catch(e){}')
+rep('try{localStorage.setItem("pvSect",sect)}catch(e){}', 'try{localStorage.setItem("pvSect2",sect)}catch(e){}')
+
 # ---- fonts, flags, icon, three.js ----
 FACES = [("Unbounded", "unbounded", [600]), ("Manrope", "manrope", [400, 600, 700, 800]), ("Playfair Display", "playfair-display", [700, 800]),
          ("Cormorant Garamond", "cormorant-garamond", [700]), ("Forum", "forum", [400]), ("Oswald", "oswald", [700])]

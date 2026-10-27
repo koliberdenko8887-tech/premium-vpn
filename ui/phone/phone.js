@@ -182,6 +182,19 @@
     document.body.appendChild(list);
     document.getElementById("scroll").addEventListener("click",function(e){if(e.target.closest(".srv"))setTimeout(closeSheet,260)});
     window.pvSheet=function(){openSheet(list)};
+    // the connection modes are one line at the top: a tap opens them as a sheet
+    var modes=document.querySelector("#home .modes"),mb=document.createElement("button");
+    mb.type="button";mb.className="modebtn";mb.id="modeBtn";modes.parentNode.insertBefore(mb,modes);
+    var ms=sheet("modeSheet",'<div class="grab"></div><h4>Режим подключения</h4>');ms.appendChild(modes);
+    ms.insertAdjacentHTML("beforeend",'<p class="mnote">TUN: весь телефон через VPN. Прокси: 127.0.0.1 и порт из настроек, для Telegram и браузера. Стек меняет, как телефон передаёт трафик в VPN.</p><div class="row"><button type="button" class="btn main" id="modeOk">Готово</button></div>');
+    mb.addEventListener("click",function(){openSheet(ms)});
+    ms.querySelector("#modeOk").addEventListener("click",closeSheet);
+    function modeLine(){var s=settings(),p=[];if(s.tun)p.push("TUN · "+({gvisor:"gVisor",system:"Системный",mixed:"Смешанный"}[s.tunStack]||"gVisor"));
+      if(s.systemProxy||!s.tun)p.push("Прокси");p.push(s.localDns?"Локальный DNS":"DNS через VPN");
+      var t='<span class="ml"><small>Режим</small><b>'+p.join(" · ")+'</b></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+      if(mb.innerHTML!==t)mb.innerHTML=t}
+    new MutationObserver(function(){setTimeout(modeLine,0)}).observe(modes,{attributes:true,subtree:true,attributeFilter:["class"]});
+    setInterval(modeLine,1500);modeLine();
     var q=document.createElement("div");q.className="quota";q.id="quota";q.hidden=true;
     document.getElementById("loc").insertAdjacentElement("afterend",q);
     quota();
