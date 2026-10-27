@@ -924,7 +924,7 @@
         // with friends everybody stands on one wide platform; alone the hero stands on the button
         var crowd = !!(friends && friends.length), platR = 0;
         // friends stand evenly around the hero on one round platform (0.17.2)
-        if (crowd && plat) spots = [[0, 0, .4], [-.85, 0, .1], [.85, 0, .1], [-.46, 0, -.45], [.46, 0, -.45], [-1.02, 0, -.38], [1.02, 0, -.38]];
+        if (crowd && plat) spots = [[0, 0, .4], [-.7, 0, .12], [.7, 0, .12], [-.38, 0, -.42], [.38, 0, -.42], [-.86, 0, -.36], [.86, 0, -.36]]; // close together, so the camera comes nearer and friends look bigger (0.2.4)
         [me].concat(friends || []).slice(0, spots.length).forEach(function (a, i) {
           var c = H.build(a), sp = spots[i]; c.root.position.set(sp[0], (i === 0 || crowd) && plat ? .19 : 0, sp[2]); c.root.rotation.y = -sp[0] * .12;
           c.base = c.root.position.clone(); c.i = i; scene.add(c.root); chars.push(c);
@@ -1501,6 +1501,10 @@ MeshoptDecoder.decodeGltfBuffer = (target, count, size, source, mode, filter) =>
         sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uTint;uniform float uTintOn;')
           .replace('#include <map_fragment>', '#include <map_fragment>\nif(uTintOn>0.5){vec3 c0=diffuseColor.rgb;float rd=clamp((c0.r-max(c0.g,c0.b))/max(c0.r,1e-3),0.0,1.0);' +
             'float tw=smoothstep(0.45,0.8,rd);diffuseColor.rgb=mix(c0,uTint*(c0.r*1.15+0.02),tw);}');
+      }
+      if (D.id === 'king') { // Meshy made the king's gold pale cream: turn it into rich gold
+        sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n{vec3 c0=diffuseColor.rgb;float l=dot(c0,vec3(.299,.587,.114));' +
+          'float w=smoothstep(.06,.18,c0.r-c0.b)*smoothstep(.18,.32,l);diffuseColor.rgb=mix(c0,vec3(1.0,.5,.08)*pow(l,1.05)*1.25,w*.95);}');
       }
       sh.uniforms.uHead = { value: new T.Vector3() }; sh.uniforms.uBr = { value: 0 }; sh.uniforms.uPiv = { value: new T.Vector3(cfg.px || 0, cfg.neck, cfg.pz || 0) }; uni = sh.uniforms;
       var hw = 'smoothstep(' + fx(cfg.n0) + ',' + fx(cfg.n1) + ',position.y)*(1.0-smoothstep(' + fx(cfg.a0) + ',' + fx(cfg.a1) + ',abs(position.x)))';

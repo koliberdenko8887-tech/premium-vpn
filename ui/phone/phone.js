@@ -7,7 +7,7 @@
   window.PV_THEMES=[["ace","Красный туз","#060606",{on:"#9e0a1d",off:"#3a0e14",glow:"#ff1a33",gi:.45,ring:"#ffffff",env:.4,coat:.45,tint:""}],
     ["ocean","Океан и пламя","#0f2035",{on:"#ff7a1f",off:"#22344a",glow:"#ff6a00",ring:"#f7f3ec",env:.4,coat:.45,tint:"#ff7a1f"}],
     ["bordo","Бордо и роса","#5a1027",{on:"#e4dfe2",off:"#4a2532",glow:"#ffd6e0",ring:"#7d1a38",env:.4,coat:.45,tint:"#e9e4e7"}],
-    ["gold","Чёрное золото","#0b0b0c",{on:"#d4a94a",off:"#2e2618",glow:"#f2c14e",ring:"#1a1408",env:.4,coat:.45,tint:"#e0b55a"}],
+    ["gold","Чёрное золото","#0b0b0c",{on:"#a8700c",off:"#2a1e08",glow:"#ffb22a",gi:.5,ring:"#ffd45e",env:.8,coat:.7,tint:"#d99a12"}],
     ["lava","Лава","#0a0a0a",{on:"#ff6a00",off:"#3a2210",glow:"#ff5a00",ring:"#111111",env:.4,coat:.45,tint:"#ff7400"}],
     ["indigo","Индиго","#0d0a26",{on:"#7d5cff",off:"#241d4d",glow:"#8f72ff",ring:"#ffffff",env:.4,coat:.45,tint:"#8466ff"}]];
   window.H3D_MAX_DPR=3;window.H3D_SNAP_DPR=2; // sharp people on phone screens
@@ -133,7 +133,14 @@
   window.pvResetStats=function(){PV.resetStats();return Promise.resolve()};
   window.pvLog=function(n){return Promise.resolve({name:n,text:PV.log()})};
   window.pvClearLogs=function(){PV.clearLogs();return Promise.resolve()};
+  // each theme has its own hero on the button; a theme change swaps it, a person picked by hand stays
+  var THERO={ace:"ninja",bordo:"ninja",gold:"king",indigo:"astro",ocean:"cute",lava:"ginger"},lastTheme=null;
+  function themeHero(t){var k=THERO[t],g=jp(settings().game||"{}",{}),me=g.me||{};
+    if(!k||!window.AV_PRESETS||(me.char&&!/^(ninja|king|astro|cute|ginger)$/.test(me.char))||me.char===k)return;
+    var p=AV_PRESETS.filter(function(q){return q.key===k})[0];if(!p)return;
+    var n=JSON.parse(JSON.stringify(p));if(me.name)n.name=me.name;g.me=n;if((g.v||0)<7){g.v=7;g.crowd=false}pvSet("game",JSON.stringify(g))}
   window.pvTheme=function(t){var x=PV_THEMES.filter(function(q){return q[0]===t})[0];if(!x)return;
+    if(lastTheme&&lastTheme!==t)themeHero(t);lastTheme=t;
     if(PV.theme)PV.theme(x[2]);if(window.Hero3D&&Hero3D.setTheme)Hero3D.setTheme(x[3]);
     var h=document.querySelector(".gbanner h2");if(h)h.textContent=CREW[t]||CREW.ace;
     if(window.pvRethumb)pvRethumb()};
@@ -276,10 +283,10 @@
     },
     gold:function(ctx,w,h,r){
       var g=ctx.createRadialGradient(w*.62,h*.38,0,w*.62,h*.38,Math.max(w,h)*.8);g.addColorStop(0,"#1e1a15");g.addColorStop(1,"#080809");ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
-      function rosette(cx,cy,R,a,k){ctx.strokeStyle="rgba(214,178,98,"+a+")";ctx.lineWidth=.7;for(var j=0;j<k;j++){ctx.save();ctx.translate(cx,cy);ctx.rotate(j*Math.PI/(k/2));ctx.beginPath();ctx.ellipse(0,0,R,R*.3,0,0,6.283);ctx.stroke();ctx.restore()}}
+      function rosette(cx,cy,R,a,k){ctx.strokeStyle="rgba(230,172,40,"+a+")";ctx.lineWidth=.7;for(var j=0;j<k;j++){ctx.save();ctx.translate(cx,cy);ctx.rotate(j*Math.PI/(k/2));ctx.beginPath();ctx.ellipse(0,0,R,R*.3,0,0,6.283);ctx.stroke();ctx.restore()}}
       rosette(w*.84,h*.2,w*.62,.11,96);rosette(w*.84,h*.2,w*.3,.16,64);rosette(w*.08,h*.98,w*.5,.08,80);
-      for(var k=0;k<34;k++){ctx.beginPath();for(var x=0;x<=w;x+=6){var y=h*.72+k*3.2+Math.sin(x/42+k*.32)*9+Math.sin(x/130)*6;x?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.strokeStyle="rgba(214,178,98,"+(.035+.04*Math.sin(k/5))+")";ctx.lineWidth=.7;ctx.stroke()}
-      for(var s=0;s<5;s++){var fx=r()*w,fy=r()*h,fl=ctx.createLinearGradient(fx,fy,fx+90,fy+30);fl.addColorStop(0,"rgba(240,200,110,0)");fl.addColorStop(.5,"rgba(240,200,110,.10)");fl.addColorStop(1,"rgba(240,200,110,0)");ctx.fillStyle=fl;ctx.fillRect(fx,fy,90,14)}
+      for(var k=0;k<34;k++){ctx.beginPath();for(var x=0;x<=w;x+=6){var y=h*.72+k*3.2+Math.sin(x/42+k*.32)*9+Math.sin(x/130)*6;x?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.strokeStyle="rgba(230,172,40,"+(.035+.04*Math.sin(k/5))+")";ctx.lineWidth=.7;ctx.stroke()}
+      for(var s=0;s<5;s++){var fx=r()*w,fy=r()*h,fl=ctx.createLinearGradient(fx,fy,fx+90,fy+30);fl.addColorStop(0,"rgba(255,196,60,0)");fl.addColorStop(.5,"rgba(255,196,60,.10)");fl.addColorStop(1,"rgba(255,196,60,0)");ctx.fillStyle=fl;ctx.fillRect(fx,fy,90,14)}
       noise(ctx,.22,seeded);
     },
     lava:function(ctx,w,h,r){

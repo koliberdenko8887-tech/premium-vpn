@@ -63,9 +63,9 @@ rep('if(vis&&!busy&&!(S.diag&&S.diag.running)&&c.status!=="error"){var n=heroNam
 rep('+(cost>0?". В черновике бесплатно, потом это будет стоить "+cost+" кристаллов":"")', '')
 rep("thumb(m[1],\"head\")", "thumb(m[1],\"body\")")
 rep("  function demo(){", """  // a new theme recolours the ninja: pictures in the lists are made again
-  window.pvRethumb=function(){heroKey="";gangKey="";shopKey="";
+  window.pvRethumb=function(){heroKey="";gangKey="";shopKey="";draft=null;
     document.querySelectorAll("#hPick button").forEach(function(b){b.querySelector(".v").innerHTML=thumb(AV_PRESETS[b.dataset.i],"body")});
-    if(S)render()};
+    if(S)poll()};
   function demo(){""")
 # the Windows modes, as they exist on a phone: TUN = Android's VPN for the whole phone, «Прокси» = 127.0.0.1:port
 rep('<span class="ck"></span>Системный прокси</button>', '<span class="ck"></span>Прокси</button>')
@@ -76,6 +76,14 @@ rep("""            <button type="button" data-eng="singbox" title="TUN на sing
 """            <button type="button" data-eng="gvisor" title="Работает везде, рекомендуется">gVisor</button>
             <button type="button" data-eng="system" title="Быстрее, но на некоторых телефонах не работает">Системный</button>
             <button type="button" data-eng="mixed" title="Системный для TCP, gVisor для UDP">Смешанный</button>""")
+
+# ---- heroes of the themes (0.2.4): king = «Чёрное золото», astronaut = «Индиго», chibi = «Океан и пламя», ginger = «Лава» ----
+rep("['ninja', 'girl', 'coat', 'pink', 'dress', 'bomber', 'blazer', 'muscle'].indexOf(o.char)", "['ninja', 'king', 'astro', 'cute', 'ginger', 'girl', 'coat', 'pink', 'dress', 'bomber', 'blazer', 'muscle'].indexOf(o.char)")
+rep("""    P('girl', 25, { model: 'meshy', char: 'girl',""", """    P('king', 20, { model: 'meshy', char: 'king', age: 'adult', top: 'tee', topColor: '#17120f', bottom: 'jeans', bottomColor: '#17120f', shoes: 'sneakers', shoeColor: '#d6b262' }),
+    P('astro', 20, { model: 'meshy', char: 'astro', age: 'adult', top: 'tee', topColor: '#f4f2ff', bottom: 'jeans', bottomColor: '#6a3cf0', shoes: 'sneakers', shoeColor: '#6a3cf0' }),
+    P('cute', 20, { model: 'meshy', char: 'cute', age: 'adult', top: 'tee', topColor: '#ff7a00', bottom: 'jeans', bottomColor: '#0f2d5c', shoes: 'sneakers', shoeColor: '#ff7a00' }),
+    P('ginger', 25, { model: 'meshy', char: 'ginger', age: 'adult', build: 'slim', skin: '#f1c39f', hair: 'wavy', hairColor: '#b5541c', top: 'jacket', topColor: '#17120f', bottom: 'jeans', bottomColor: '#17120f', shoes: 'sneakers', shoeColor: '#ffffff' }),
+    P('girl', 25, { model: 'meshy', char: 'girl',""")
 
 # ---- phone behaviour ----
 rep('$("chg").addEventListener("click",function(){show("servers")});', '$("chg").addEventListener("click",function(){if(window.pvSheet)pvSheet();else show("servers")});')
