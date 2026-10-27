@@ -1,0 +1,7 @@
+build/
+*.so
+core/pvcore-host
+core/xray-host
+android/assets/
+*.jks
+pass.txt

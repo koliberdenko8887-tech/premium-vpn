@@ -1,0 +1,1881 @@
+<!doctype html>
+<html lang="ru" data-theme="ace">
+<head>
+<meta charset="utf-8">
+<title>Премиум VPN</title>
+<style>
+/*FONTS*/
+:root{color-scheme:dark;--body:"Manrope","Segoe UI",system-ui,sans-serif}
+/* Два оформления. По умолчанию «Красный туз»; «Океан и пламя» выбирается в настройках. */
+html[data-theme="ace"]{
+  --base:#060606; --base2:#0b0b0c; --text:#ffffff; --muted:#a59b9d;
+  --accent:#ff2a47; --accent2:#ff5068; --ok:#ff5068;
+  --panel:rgba(12,12,13,.9); --border:rgba(255,42,71,.26); --sel:rgba(255,42,71,.1);
+  --display:"Playfair Display",Georgia,serif; --timer-w:800;
+  --logo-bg:radial-gradient(circle at 35% 28%,#ff8d9c,#f0173a 48%,#a30a21);
+  --btn-bg:radial-gradient(circle at 36% 28%,#ff8d9c,#f0173a 48%,#a30a21); --btn-fg:#0b0b0b;
+  --ring:rgba(255,42,71,.55); --ring-soft:rgba(255,42,71,.07); --glow:rgba(240,23,58,.45);
+  --onaccent:#fff; --grad:linear-gradient(90deg,#ff2a47,#c40b25);
+  --dots:radial-gradient(rgba(255,255,255,.075) 1px,transparent 1.35px) 0 0/6px 6px;
+  --err:#ff8a9a; --float:rgba(14,14,15,.96); --field:rgba(0,0,0,.45);
+}
+html[data-theme="ocean"]{
+  --base:#0f2035; --base2:#0a1626; --text:#f7f3ec; --muted:#a4b9cb;
+  --accent:#ff8124; --accent2:#ffb267; --ok:#ffb267;
+  --panel:rgba(8,20,35,.5); --border:rgba(255,255,255,.14); --sel:rgba(255,255,255,.07);
+  --display:"Unbounded","Segoe UI",system-ui,sans-serif; --timer-w:600;
+  --logo-bg:radial-gradient(circle at 35% 28%,#ffe1bd,#ff8124 55%,#d8361b);
+  --btn-bg:radial-gradient(circle at 36% 28%,#ffe1bd,#ff8124 48%,#d8361b); --btn-fg:#fff;
+  --ring:rgba(247,243,236,.6); --ring-soft:rgba(247,243,236,.08); --glow:rgba(255,129,36,.5);
+  --onaccent:#0f2035; --grad:linear-gradient(90deg,#ff8124,#ff5a14);
+  --dots:none;
+  --err:#ffb27f; --float:rgba(8,18,32,.95); --field:rgba(5,12,22,.5);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--base);color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;overflow:hidden;user-select:none}
+button{font:inherit;color:inherit}
+#app{position:relative;height:100%;display:grid;grid-template-columns:78px 1fr;isolation:isolate}
+canvas#bg{position:absolute;inset:0;width:100%;height:100%;z-index:-1;display:block}
+
+/* left rail */
+.rail{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 0;margin:20px 0 20px 14px;position:relative;z-index:2}
+.logo{width:38px;height:38px;border-radius:10px;background:url(/*ICON*/) center/contain no-repeat;filter:drop-shadow(0 0 10px var(--glow));margin-bottom:10px;flex:none}
+.ri{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;color:var(--muted);border:0;background:none;cursor:pointer;position:relative}
+.ri svg{width:21px;height:21px}
+.ri:hover{color:var(--text)}
+.ri.on{background:var(--sel);color:var(--accent);box-shadow:inset 0 0 0 1px var(--border)}
+.ri .tip{position:absolute;left:52px;top:50%;transform:translateY(-50%);background:var(--float);border:1px solid var(--border);padding:4px 10px;border-radius:8px;font-size:12px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;z-index:5;font-weight:600}
+.ri:hover .tip{opacity:1}
+.ri.ver{margin-top:auto;font-size:9px;color:var(--muted);opacity:.6;cursor:default;height:auto;width:auto}
+
+main{min-width:0;min-height:0;position:relative}
+.page{display:none;height:100%}
+.page.on{display:flex}
+.glass{background:var(--panel);border:1px solid var(--border);border-radius:22px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+
+/* home */
+#home{gap:16px;padding:20px 20px 20px 14px}
+#home.on{display:grid;grid-template-columns:minmax(0,1fr) 300px;grid-template-rows:minmax(0,1fr)}
+#home>.main{display:flex;flex-direction:column;align-items:center;justify-content:safe center;gap:16px;padding:26px 20px;min-height:0;overflow-y:auto}
+#home>.main>*{flex-shrink:0}
+.pill{display:inline-flex;align-items:center;gap:9px;padding:7px 16px;border-radius:99px;font-size:12.5px;font-weight:800;letter-spacing:.02em;background:var(--sel);border:1px solid var(--border)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok)}
+body:not(.on) .dot{background:var(--muted);box-shadow:none}
+body.busy .dot{background:var(--accent2);box-shadow:0 0 10px var(--accent2);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.3}}
+.timer{font-family:var(--display);font-weight:var(--timer-w);color:var(--text);font-size:clamp(34px,5.4vw,50px);line-height:1;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+body:not(.on) .timer{color:var(--muted)}
+.speeds{display:flex;gap:34px;font-variant-numeric:tabular-nums}
+.speeds div{display:flex;flex-direction:column;align-items:center;gap:1px}
+.speeds small{font-size:11px;color:var(--muted);font-weight:700}
+.speeds b{font-size:15px;font-weight:700}
+.power{position:relative;width:138px;height:138px;margin:12px 0 8px;border-radius:50%;border:0;cursor:pointer;display:grid;place-items:center;color:var(--btn-fg);
+  background:var(--btn-bg);
+  box-shadow:0 0 0 12px var(--ring-soft),0 0 0 13px var(--ring),0 0 60px var(--glow),inset 0 -10px 24px rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.4);
+  transition:filter .4s,box-shadow .4s,transform .15s}
+.power:active{transform:scale(.97)}
+#home>.main>*{flex-shrink:0}
+.hint-c:empty,.err:empty{display:none}
+.power>svg{width:50px;height:50px}
+.power:focus-visible,.chg:focus-visible,.srv:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+body:not(.on) .power{filter:saturate(.25) brightness(.72);box-shadow:0 0 0 12px rgba(255,255,255,.04),0 0 0 13px rgba(255,255,255,.1),inset 0 -10px 24px rgba(0,0,0,.3)}
+body.busy .power{filter:saturate(.8)}
+body.busy .power::after{content:"";position:absolute;inset:-9px;border-radius:50%;border:3px solid transparent;border-top-color:#fff;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:no-preference){body.on .power{animation:pulse 2.8s ease-in-out infinite}}
+@keyframes pulse{50%{box-shadow:0 0 0 18px var(--ring-soft),0 0 0 19px var(--ring),0 0 80px var(--glow),inset 0 -10px 24px rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.4)}}
+.hint-c{font-size:12.5px;color:var(--muted);text-align:center;min-height:18px;max-width:430px}
+.err{font-size:13px;color:var(--err);text-align:center;min-height:18px;max-width:460px;font-weight:600}
+.loc{display:flex;align-items:center;gap:12px;width:min(100%,380px);padding:11px 12px 11px 15px;border-radius:16px;background:var(--sel);border:1px solid var(--border)}
+.flag{width:26px;height:19px;border-radius:4px;flex:none;background:center/cover no-repeat;box-shadow:0 0 0 1px rgba(0,0,0,.3),0 2px 5px rgba(0,0,0,.3)}
+.flag.none{display:grid;place-items:center;background:var(--sel);color:var(--accent);box-shadow:inset 0 0 0 1px var(--border)}
+.flag.none svg{width:13px;height:13px}
+.flag.big{width:34px;height:25px;border-radius:5px}
+.flag.big svg{width:16px;height:16px}
+.loc .ln{flex:1;display:flex;flex-direction:column;line-height:1.3;min-width:0}
+.loc small{font-size:11px;color:var(--muted);font-weight:700}
+.loc b{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chg{font-size:12px;font-weight:800;padding:8px 15px;border-radius:99px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;flex:none}
+.chg:hover{background:var(--accent);color:var(--onaccent)}
+
+@media (max-height:600px){
+  #home>.main{gap:10px;padding:16px 16px}
+  .timer{font-size:clamp(30px,4.6vw,40px)}
+  .power{width:112px;height:112px;margin:6px 0 4px}
+  .power>svg{width:40px;height:40px}
+  .speeds b{font-size:14px}
+}
+@media (max-height:540px){
+  #home>.main{gap:7px}
+  .power{width:96px;height:96px;margin:4px 0 2px}
+  .pill{padding:5px 12px}
+}
+/* connection mode bar */
+.modes{display:flex;align-items:center;margin-bottom:auto;flex:none}
+.seg{display:inline-flex;padding:3px;border-radius:99px;background:var(--sel);border:1px solid var(--border)}
+.seg button{border:0;background:transparent;color:var(--muted);font-weight:800;font-size:12px;padding:6px 16px;border-radius:99px;cursor:pointer;letter-spacing:.02em}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--grad);color:var(--onaccent);box-shadow:0 2px 10px var(--glow)}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--sel);color:var(--muted);border-radius:99px;padding:6px 14px 6px 8px;font-size:12px;font-weight:800;cursor:pointer}
+.chip:hover{color:var(--text)}
+.chip .ck{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--muted);display:grid;place-items:center}
+.chip.on{color:var(--text);border-color:var(--accent)}
+.chip.on .ck{background:var(--accent);border-color:var(--accent)}
+.chip.on .ck::after{content:"";width:7px;height:4px;border:2px solid var(--onaccent);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.seg button:focus-visible,.chip:focus-visible,.adm button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.adm{display:none;align-items:center;gap:10px;font-size:12.5px;color:var(--text);background:var(--sel);border:1px solid var(--accent);border-radius:12px;padding:6px 6px 6px 12px;flex:none}
+.adm.show{display:flex}
+.adm button{border:0;background:var(--grad);color:var(--onaccent);font-weight:800;font-size:12px;border-radius:9px;padding:6px 12px;cursor:pointer}
+
+/* server list panel */
+.list{display:flex;flex-direction:column;padding:14px 10px 12px;min-width:0;min-height:0}
+.lh{display:flex;align-items:center;justify-content:space-between;margin:0 6px 8px 10px;flex:none}
+.rf{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--sel);color:inherit;border-radius:99px;padding:5px 11px 5px 9px;font-size:11.5px;font-weight:800;cursor:pointer}
+.rf svg{width:14px;height:14px}
+.rf:hover{border-color:var(--accent)}
+.rf.spin svg{animation:spin 1s linear infinite}
+.rf:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.list h4{margin:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:5px;padding:0 4px}
+.srv{display:flex;align-items:center;gap:11px;width:100%;padding:11px 12px;border-radius:13px;border:1px solid transparent;background:transparent;color:inherit;font:inherit;font-size:13.5px;font-weight:700;text-align:left;cursor:pointer;flex:none}
+.srv:hover{background:var(--sel)}
+.srv.on{background:var(--sel);border-color:var(--accent)}
+.srv .nm{flex:1;min-width:0}
+.srv .nm span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srv .nm small{display:block;color:var(--muted);font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srv .ms{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+.srv .ms.bad{color:#ff8a7f}
+.empty{color:var(--muted);font-size:12.5px;padding:10px;text-align:center}
+.linkb{border:0;background:none;color:var(--accent);cursor:pointer;padding:0;text-decoration:underline;font:inherit;font-size:12.5px}
+.sub{display:flex;justify-content:space-between;align-items:center;margin:8px 6px 0;padding:10px 12px;border-radius:12px;font-size:12px;border:1px solid var(--accent);color:var(--muted)}
+.sub b{color:var(--accent2)}
+
+/* «Красный туз»: матовая фактура на чёрных панелях, список серверов — красная карта */
+html[data-theme="ace"] #home>.main,html[data-theme="ace"] .rail,html[data-theme="ace"] .snav{background:var(--dots),var(--panel)}
+html[data-theme="ace"] .list{color:#0c0c0d;border-color:rgba(255,255,255,.14);
+  background:radial-gradient(rgba(95,0,14,.42) 1.1px,transparent 1.5px) 0 0/6px 6px,linear-gradient(160deg,#ff2d4a,#e8132f 55%,#c40b25);box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+html[data-theme="ace"] .list h4,html[data-theme="ace"] .list .empty{color:rgba(28,0,6,.72)}
+html[data-theme="ace"] .list .srv{color:#0c0c0d}
+html[data-theme="ace"] .list .srv .nm small,html[data-theme="ace"] .list .srv .ms{color:rgba(28,0,6,.6)}
+html[data-theme="ace"] .list .srv:hover{background:rgba(0,0,0,.1)}
+html[data-theme="ace"] .list .srv.on{background:#0c0c0d;color:#fff;border-color:#0c0c0d}
+html[data-theme="ace"] .list .srv.on .nm small{color:#c9c2c4}
+html[data-theme="ace"] .list .srv.on .ms{color:#ff5068}
+html[data-theme="ace"] .list .sub{border-color:#0c0c0d;color:rgba(28,0,6,.75)}
+html[data-theme="ace"] .list .sub b{color:#0c0c0d}
+html[data-theme="ace"] .list .linkb{color:#0c0c0d}
+html[data-theme="ace"] .list .flag.none{background:rgba(0,0,0,.16);color:#0c0c0d;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+html[data-theme="ace"] .list .srv.on .flag.none{background:rgba(255,255,255,.1);color:#ff5068}
+html[data-theme="ace"] .list .rf{border-color:rgba(12,12,13,.45);background:rgba(0,0,0,.08)}
+html[data-theme="ace"] .list .rf:hover{background:#0c0c0d;color:#fff}
+html[data-theme="ace"] .list .scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,.35)}
+
+/* inner pages */
+.inner{flex-direction:column;gap:16px;padding:26px 30px 28px 22px;overflow-y:auto;width:100%}
+.inner h1{font-family:var(--display);font-weight:600;font-size:23px;margin:0}
+.inner h1 em{font-style:normal;color:var(--accent)}
+.hint{color:var(--muted);font-size:13px;margin:0;max-width:72ch}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{border:1px solid var(--border);background:var(--sel);border-radius:12px;padding:9px 16px;cursor:pointer;font-weight:700;font-size:13px}
+.btn:hover{background:rgba(255,255,255,.12)}
+.btn.main{border:0;background:var(--grad);color:var(--onaccent);box-shadow:0 6px 20px var(--glow)}
+.btn.small{padding:6px 12px;font-size:12px;border-radius:10px}
+.btn.danger:hover{background:rgba(255,90,60,.22)}
+.btn:disabled{opacity:.6;cursor:default}
+.theme-b.on{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+textarea{width:100%;min-height:84px;resize:vertical;border-radius:14px;border:1px solid var(--border);background:var(--field);color:var(--text);padding:12px 14px;font:13px/1.5 var(--body);user-select:text}
+textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:13px}
+.tile{position:relative;border-radius:16px;padding:14px;min-height:118px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;border:1px solid var(--border);background:var(--panel);text-align:left;color:inherit;transition:transform .2s,border-color .2s}
+.tile:hover{transform:translateY(-3px)}
+.tile.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--glow)}
+.tile .top{display:flex;align-items:center;gap:10px}
+.tile b{display:block;font-size:14px;font-weight:700;word-break:break-word;line-height:1.3}
+.tile small{display:block;color:var(--muted);font-size:12px;font-weight:600}
+.tile .pg{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tile .x{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.3);color:#fff;cursor:pointer;font-size:14px;line-height:26px;padding:0;opacity:0;transition:opacity .2s}
+.tile:hover .x{opacity:1}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.card h3{margin:0;font-size:15px}
+.bar{height:8px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--grad)}
+.set{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--panel);border:1px solid var(--border);border-radius:16px;cursor:pointer}
+.set div{flex:1}
+.set small{display:block;color:var(--muted);font-size:12px}
+.tg{width:46px;height:26px;border-radius:99px;background:rgba(255,255,255,.18);position:relative;flex:none;transition:background .2s}
+.tg::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s}
+.set.on .tg{background:var(--grad)}
+.set.on .tg::after{left:23px}
+/* mode bar: switches that combine, as in Happ */
+.modes{flex-direction:column;gap:8px}
+.mrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.seg.sm button{padding:5px 13px;font-size:11.5px}
+.seg button:disabled{opacity:.35;cursor:not-allowed}
+.seg.idle button.on{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1px var(--border)}
+.route{font-size:11.5px;color:var(--muted);font-weight:700;text-align:center;min-height:17px}
+.route:empty{display:none}
+
+body.diag .power,body.diag .modes,body.diag .list .srv,body.diag .loc .chg{pointer-events:none;opacity:.5}
+/* game draft: Memoji-style people on the connect button, editor, gang and crystals (demo) */
+.power.stage{width:auto;height:clamp(200px,calc(100vh - 480px),720px);flex:none;min-width:min(100%,520px);max-width:100%;margin:0;padding:0;border-radius:28px;background:none;box-shadow:none;filter:none!important;animation:none!important;overflow:visible}
+body:not(.on) .power.stage{box-shadow:none}
+.power.stage::after{display:none}
+.power.stage>svg{height:100%;width:auto;max-width:100%;display:block}
+.power.stage.g3{width:100%;max-width:470px}
+canvas.h3d{width:100%;height:100%;display:block}
+.power.stage{position:relative}.power.stage>canvas.h3d{position:absolute;inset:0}
+img.h3{width:100%;height:100%;object-fit:contain;display:block}
+.power.stage.m-head{height:206px}
+@media (max-height:780px){.power.stage{height:250px}}
+@media (max-height:640px){.power.stage{height:196px}.power.stage.m-head{height:172px}}
+@media (max-height:560px){.power.stage{height:156px}.power.stage.m-head{height:138px}}
+@media (max-height:640px){.rail{gap:3px;padding:10px 0}.ri{width:40px;height:40px}.logo{margin-bottom:4px}}
+.demo{display:flex;gap:10px;align-items:center;font-size:12.5px;color:var(--muted);padding:9px 14px;border-radius:12px;border:1px dashed var(--border);background:var(--sel);max-width:760px}
+.demo b{color:var(--accent);font-weight:800;flex:none}
+.hx{display:grid;grid-template-columns:minmax(290px,370px) minmax(0,1fr);gap:16px;align-items:start}
+.hstage{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;position:sticky;top:0}
+.hbig{width:100%;height:330px;display:flex;justify-content:center;border-radius:18px;background:radial-gradient(ellipse at 50% 88%,#4a141a,transparent 62%),radial-gradient(circle at 50% 35%,#2c1418,#141013 72%);border:1px solid var(--border)}
+.hbig>svg{height:100%;width:auto}
+.crowd{margin-top:-6px}.crowd[hidden],.moves[hidden]{display:none}
+.hrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-top:-6px;max-width:100%}.hrow .crowd{margin-top:0}
+.seg.moves{flex-wrap:wrap;justify-content:center;border-radius:16px;max-width:100%}.seg.moves button{padding:5px 10px}
+.pl.moves{margin-top:6px}
+.cmp{display:grid;grid-template-columns:1.2fr 1fr;gap:10px;width:100%}
+.cmp button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px 10px;border-radius:18px;border:1px solid var(--border);background:radial-gradient(circle at 50% 38%,#2c1418,#141013 72%);cursor:pointer;color:var(--text);min-width:0}
+.cmp button.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--glow),0 0 32px var(--glow)}
+.cmp .v{width:100%;height:214px;display:flex;align-items:flex-end;justify-content:center}
+.cmp .v>svg{height:100%;width:auto;max-width:100%}
+.cmp [data-m=head] .v>svg{height:150px;margin-bottom:24px}
+.cmp b{font-size:13.5px}.cmp small{font-size:11px;color:var(--muted);font-weight:600}
+.cmp .tag{font-size:10.5px;font-weight:800;color:var(--onaccent);background:var(--grad);border-radius:99px;padding:2px 9px;margin-top:4px;visibility:hidden}
+.cmp button.on .tag{visibility:visible}
+.hname{width:100%;text-align:center;font:700 16px var(--display);color:var(--text);background:var(--field);border:1px solid var(--border);border-radius:12px;padding:9px 12px}
+.hname:focus{outline:2px solid var(--accent);outline-offset:1px}
+.lvl{width:100%;text-align:left;display:flex;flex-direction:column;gap:6px}
+.lvl .lt{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.lvl .lt b{font-family:var(--display);font-size:17px}
+.lvl .lt small{color:var(--muted);font-size:12px;font-weight:700}
+.hpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:9px}
+.hpick button,.opts button{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 4px 8px;border-radius:16px;border:1px solid var(--border);background:var(--panel);cursor:pointer;color:var(--text);transition:transform .2s;min-width:0}
+.hpick button:hover,.opts button:hover{transform:translateY(-2px)}
+.hpick button.on,.opts button.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--glow)}
+.hpick .v,.opts .v{width:72px;height:72px}
+.hpick .v{width:64px;height:96px}
+.hpick .v>svg,.opts .v>svg{width:100%;height:100%}
+.hpick b{font-size:12.5px}.hpick small{font-size:11px;color:var(--muted);font-weight:600}
+.hcats{display:flex;gap:6px;flex-wrap:wrap}
+.hgrp{margin-top:14px}.hgrp h4{margin:0 0 8px;font-size:12.5px;color:var(--muted);font-weight:800}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px}
+.opts button{font-size:11.5px;font-weight:700;line-height:1.25;text-align:center}
+.opts.tall .v{width:62px;height:93px}
+.opts .pr{font-size:10.5px;color:var(--accent);font-weight:800}
+.opts .lk{position:absolute;top:5px;right:5px;font-size:9.5px;font-weight:800;color:var(--muted);background:var(--sel);border:1px solid var(--border);border-radius:99px;padding:0 5px}
+.sw{display:flex;gap:9px;flex-wrap:wrap}
+.sw button{position:relative;width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,.15);cursor:pointer;padding:0}
+.sw button.on{border-color:#fff;box-shadow:0 0 0 3px var(--accent)}
+.sw button.paid::after{content:"";position:absolute;right:-3px;bottom:-3px;width:12px;height:12px;border-radius:50%;background:#ff5068 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h12l4 6-10 12L2 9z' fill='white'/%3E%3C/svg%3E") center/8px no-repeat}
+.pl{display:flex;gap:8px;flex-wrap:wrap}
+.pl button{border:1px solid var(--border);background:var(--sel);border-radius:99px;padding:7px 14px;font-weight:700;font-size:12.5px;cursor:pointer;color:var(--text)}
+.pl button.on{background:var(--grad);color:var(--onaccent);border-color:transparent}
+.pl button small{opacity:.75;font-weight:600;margin-left:5px}
+.gem{display:inline-block;width:13px;height:13px;vertical-align:-1px;margin-left:3px}
+.gbanner{display:flex;gap:16px;align-items:center;background:linear-gradient(120deg,#2a0b10,#120708);border:1px solid var(--accent);border-radius:20px;padding:16px 20px}
+.gbanner .crest{width:58px;height:66px;flex:none}
+.gbanner .crest>svg{width:100%;height:100%}
+.gbanner h2{margin:0;font-family:var(--display);font-size:22px}
+.gbanner small{color:var(--muted);font-weight:700}
+.gstage{display:flex;flex-direction:column;align-items:center;gap:12px;background:radial-gradient(ellipse at 50% 85%,#3a1216,transparent 60%),var(--panel)}
+.gstage .v{height:250px;width:100%;display:flex;justify-content:center}
+.gstage .v>svg{height:100%;width:auto;max-width:100%}
+.gstage .fld{width:100%}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:13px}
+.mem{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:13px}
+.mem.me{background:var(--sel);box-shadow:inset 0 0 0 1px var(--accent)}
+.mem .av{width:44px;height:44px;flex:none;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 40%,#3a1216,#1a0c0e)}
+.mem .av>svg{width:100%;height:100%}
+.mem .nm{flex:1;min-width:0;line-height:1.3}
+.mem .nm small{display:block;color:var(--muted);font-size:11.5px}
+.mem .pts{font-weight:800;font-variant-numeric:tabular-nums}
+.code{font-family:var(--display);font-size:20px;letter-spacing:.12em;padding:8px 14px;border-radius:12px;background:var(--field);border:1px dashed var(--accent);display:inline-block}
+.li{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.li:last-child{border-bottom:0}.li span:last-child{font-weight:800;color:var(--accent);white-space:nowrap}
+.bal{font-family:var(--display);font-size:34px;font-weight:700;line-height:1.1}
+.streak{display:flex;gap:8px;flex-wrap:wrap}
+.streak div{width:62px;padding:8px 4px;border-radius:12px;text-align:center;background:var(--sel);border:1px solid var(--border);font-size:11px;color:var(--muted);font-weight:700}
+.streak div b{display:block;color:var(--text);font-size:14px}
+.streak div.ok{background:rgba(255,42,71,.22);border-color:var(--accent)}
+.streak div.now{box-shadow:0 0 0 2px var(--accent)}
+.buy{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.buy button{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:var(--panel);cursor:pointer}
+.buy button:hover{border-color:var(--accent)}
+.buy button small{color:var(--accent);font-weight:800}
+.tryon{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.tryon button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px 10px;border-radius:16px;border:1px solid var(--border);background:radial-gradient(circle at 50% 40%,#2c1418,#141013 75%);cursor:pointer;color:var(--text)}
+.tryon button:hover{border-color:var(--accent)}
+.tryon .v{width:96px;height:140px}.tryon .v>svg{width:100%;height:100%}
+.tryon b{font-size:12.5px}.tryon small{font-size:11px;color:var(--accent);font-weight:800}
+@media (max-width:900px){.hx{grid-template-columns:1fr}.hstage{position:static}}
+
+/* settings: sections on the left, fields on the right */
+#settings{gap:14px}
+.sx{display:grid;grid-template-columns:190px minmax(0,1fr);gap:16px;align-items:start}
+.snav{display:flex;flex-direction:column;gap:3px;position:sticky;top:0;padding:8px;background:var(--panel);border:1px solid var(--border);border-radius:18px;backdrop-filter:blur(18px)}
+.snav button{text-align:left;border:1px solid transparent;background:none;color:var(--muted);padding:8px 12px;border-radius:11px;cursor:pointer;font-weight:700;font-size:13px}
+.snav button:hover{color:var(--text);background:var(--sel)}
+.snav button.on{color:var(--text);background:var(--sel);border-color:var(--border);box-shadow:inset 3px 0 0 var(--accent)}
+.snav button:focus-visible,.fld:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spane{display:flex;flex-direction:column;gap:9px;min-width:0}
+.spane h2{font-size:16px;margin:2px 0 2px;font-weight:800}
+.fld{display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--panel);border:1px solid var(--border);border-radius:14px}
+.fld>div:first-child{flex:1;min-width:0;font-weight:700}
+.fld small{display:block;color:var(--muted);font-size:12px;font-weight:500;line-height:1.45;margin-top:2px}
+.fld.col{flex-direction:column;align-items:stretch;gap:9px}
+.fld.bool{cursor:pointer}
+.fld.dim>*{opacity:.45}
+.fld.bool.on .tg{background:var(--grad)}
+.fld.bool.on .tg::after{left:23px}
+.in{background:var(--field);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:7px 10px;font:13px var(--body);min-width:0;user-select:text}
+input.in{width:240px}
+input.in.num{width:96px;font-variant-numeric:tabular-nums}
+select.in{padding-right:6px;cursor:pointer}
+select.in option{background:#141416;color:#fff}
+.in:focus{outline:2px solid var(--accent);outline-offset:1px}
+.fld textarea{min-height:92px;font:12.5px/1.5 Consolas,"Cascadia Mono",monospace}
+.note{font-size:12px;color:var(--muted);padding:0 4px;margin:0}
+.fld .seg{flex:none}
+
+/* statistics */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:13px 16px;display:flex;flex-direction:column;gap:2px}
+.kpi small{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.kpi b{font-family:var(--display);font-size:22px;font-weight:var(--timer-w);font-variant-numeric:tabular-nums;line-height:1.25}
+.kpi span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+canvas.spd{width:100%;height:150px;display:block}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.days{display:flex;align-items:flex-end;gap:3px;height:130px;padding-top:6px}
+.days div{flex:1;min-width:3px;background:var(--grad);border-radius:4px 4px 1px 1px;opacity:.85;position:relative}
+.days div:hover{opacity:1}
+.days div.z{background:var(--sel);height:3px!important}
+.daysx{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.tbl{display:flex;flex-direction:column;font-size:12.5px;max-height:320px;overflow-y:auto}
+.tr{display:grid;grid-template-columns:minmax(0,1fr) 92px minmax(0,150px) 150px;gap:10px;padding:6px 4px;border-bottom:1px solid var(--sel);align-items:center}
+.tr.h{color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;position:sticky;top:0;background:var(--float)}
+.tr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr .n{font-variant-numeric:tabular-nums;color:var(--muted);text-align:right}
+.badge{display:inline-block;font-size:11px;font-weight:800;padding:1px 8px;border-radius:99px;border:1px solid var(--border)}
+.badge.vpn{color:var(--accent2);border-color:var(--accent)}
+.badge.blk{color:var(--err)}
+.srow{display:flex;align-items:center;gap:10px;padding:6px 2px;font-size:13px;border-bottom:1px solid var(--sel)}
+.srow b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.srow span{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+
+/* logs and the check of every mode */
+#logs{gap:14px}
+.logbox{flex:1;min-height:260px;margin:0;background:var(--float);border:1px solid var(--border);border-radius:14px;padding:12px 14px;font:12px/1.5 Consolas,"Cascadia Mono",monospace;white-space:pre-wrap;word-break:break-word;overflow:auto;user-select:text;color:var(--text)}
+.logbox:empty::before{content:"Журнал пуст";color:var(--muted)}
+.dres{display:flex;flex-direction:column;gap:6px}
+.dr{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;padding:7px 10px;border-radius:10px;background:var(--sel)}
+.dr i{font-style:normal;font-weight:800;flex:none;width:18px;text-align:center}
+.dr.ok i{color:#39d98a}
+.dr.bad i{color:var(--err)}
+.dr.skip i{color:var(--muted)}
+.dr b{display:block;font-weight:800}
+.dr small{display:block;color:var(--muted);font-size:12px;line-height:1.45;word-break:break-word}
+.bar[hidden]{display:none}
+@media (max-width:860px){.sx{grid-template-columns:1fr}.snav{position:static;flex-direction:row;flex-wrap:wrap}.two{grid-template-columns:1fr}.tr{grid-template-columns:minmax(0,1fr) 80px 110px}.tr .p{display:none}}
+
+.toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:var(--float);border:1px solid var(--border);padding:11px 18px;border-radius:14px;font-size:13px;transition:transform .3s;z-index:10;max-width:80%;text-align:center}
+.toast.show{transform:translate(-50%,0)}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:8px}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <nav class="rail glass" aria-label="Разделы">
+    <span class="logo"></span>
+    <button class="ri on" data-p="home" aria-label="Главная"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span class="tip">Главная</span></button>
+    <button class="ri" data-p="servers" aria-label="Серверы"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg><span class="tip">Серверы</span></button>
+    <button class="ri" data-p="subs" aria-label="Подписки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18"/></svg><span class="tip">Подписки</span></button>
+    <button class="ri" data-p="stats" aria-label="Статистика"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="tip">Статистика</span></button>
+    <button class="ri" data-p="logs" aria-label="Журнал и проверка"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6M9 9h2"/></svg><span class="tip">Журнал и проверка</span></button>
+    <button class="ri" data-p="hero" aria-label="Мой герой"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10l1-6 4 3h4l4-3 1 6"/><circle cx="12" cy="14" r="7"/><path d="M9.5 13h.01M14.5 13h.01M10 16.5q2 1.5 4 0"/></svg><span class="tip">Мой герой</span></button>
+    <button class="ri" data-p="gang" aria-label="Банда"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2a5 5 0 0 1 5.5 5.3"/></svg><span class="tip">Банда</span></button>
+    <button class="ri" data-p="shop" aria-label="Кристаллы"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M9 3l3 18M15 3l-3 18"/></svg><span class="tip">Кристаллы</span></button>
+    <button class="ri" data-p="settings" aria-label="Настройки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg><span class="tip">Настройки</span></button>
+    <span class="ri ver" id="ver"></span>
+  </nav>
+
+  <main>
+    <section class="page on" id="home">
+      <div class="main glass">
+        <div class="modes">
+          <div class="mrow">
+            <button type="button" class="chip" id="mProxy" title="Windows направляет в VPN браузеры и программы, которые берут настройки прокси. Права администратора не нужны."><span class="ck"></span>Системный прокси</button>
+            <button type="button" class="chip" id="mTun" title="Через VPN идёт весь трафик компьютера, включая игры и программы без настроек прокси. Нужен запуск от имени администратора. Можно включить вместе с системным прокси."><span class="ck"></span>TUN</button>
+            <button type="button" class="chip" id="dnsBtn" title="Адреса сайтов узнаются через DNS вашего провайдера, а не через VPN. Включайте, если какие-то сайты не открываются."><span class="ck"></span>Локальный DNS</button>
+          </div>
+          <div class="seg sm" id="engSeg" role="group" aria-label="Движок TUN">
+            <button type="button" data-eng="singbox" title="TUN на sing-box: самый надёжный, рекомендуется">sing-box</button>
+            <button type="button" data-eng="xray" title="TUN на Xray: запасной вариант, как в Happ">Xray TUN</button>
+            <button type="button" data-eng="tun2proxy" title="TUN через tun2proxy: запасной вариант, как в Happ">tun2proxy</button>
+          </div>
+        </div>
+        <div class="adm" id="adm">Для TUN нужны права администратора<button type="button" id="admBtn">Перезапустить</button></div>
+        <span class="pill"><span class="dot"></span><span id="pillt">Не подключено</span></span>
+        <div class="route" id="route"></div>
+        <div class="timer" id="timer">00:00:00</div>
+        <div class="speeds"><div><small>↓ Загрузка</small><b id="down">0</b></div><div><small>↑ Отдача</small><b id="up">0</b></div></div>
+        <button class="power" id="power" type="button" aria-label="Включить или выключить защиту">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M6.3 7.3a8.5 8.5 0 1 0 11.4 0"/></svg>
+        </button>
+        <div class="hrow">
+          <div class="seg sm crowd" id="crowd" role="group" aria-label="Кто стоит на кнопке" hidden><button type="button" data-c="0">Один</button><button type="button" data-c="1">С друзьями</button></div>
+          <div class="seg sm moves" id="moves" role="group" aria-label="Что делает герой, когда VPN включён" hidden><button type="button" data-m="walk">Ходьба</button><button type="button" data-m="run">Бег</button><button type="button" data-m="idle">Стоит</button></div>
+        </div>
+        <div class="hint-c" id="hint"></div>
+        <div class="err" id="err"></div>
+        <div class="loc" id="loc" style="margin-bottom:auto"><span class="flag" id="locflag"></span><span class="ln"><small>Сервер</small><b id="locn">Cloudflare WARP</b></span><button class="chg" id="chg" type="button">Сменить</button></div>
+      </div>
+      <aside class="list glass">
+        <div class="lh"><h4>Серверы</h4><button class="rf" id="rfBtn" type="button" title="Обновить список и проверить пинг"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/></svg><span>Обновить</span></button></div>
+        <div class="scroll" id="scroll"></div>
+        <div class="sub" id="subbar"></div>
+      </aside>
+    </section>
+
+    <section class="page inner" id="servers">
+      <h1>Выбор <em>сервера</em></h1>
+      <p class="hint">Нажмите на сервер, чтобы выбрать его. Бесплатный сервер встроен; свои серверы добавляются в «Подписках».</p>
+      <div class="row"><button class="btn main" id="pingBtn">Проверить скорость отклика</button><button class="btn" data-go="subs">Добавить серверы</button></div>
+      <div class="grid" id="grid"></div>
+    </section>
+
+    <section class="page inner" id="subs">
+      <h1>Под<em>писки</em></h1>
+      <p class="hint">Вставьте ссылку на подписку (https://…) или ссылки на серверы: vless://, vmess://, trojan://, ss://, hysteria2://. Можно несколько, каждую с новой строки. Если на компьютере есть Happ, кнопка «Взять из Happ» сама перенесёт его подписки.</p>
+      <textarea id="addText" placeholder="https://… или vless://…"></textarea>
+      <div class="row"><button class="btn main" id="addBtn">Добавить</button><button class="btn" id="pasteBtn">Вставить из буфера</button><button class="btn" id="happBtn">Взять из Happ</button></div>
+      <div style="display:flex;flex-direction:column;gap:12px" id="subList"></div>
+      <div class="card">
+        <h3>Бесплатный сервер Cloudflare WARP</h3>
+        <p class="hint">Встроен и работает без подписки. Это бесплатный VPN от компании Cloudflare (сервис «1.1.1.1 + WARP»): он шифрует трафик и скрывает ваш IP. Страну выбрать нельзя, подключение идёт к ближайшему серверу Cloudflare. Приложение само выбирает способ связи с ним: WireGuard или MASQUE.</p>
+      </div>
+    </section>
+
+    <section class="page inner" id="stats">
+      <div class="row" style="justify-content:space-between"><h1>Стати<em>стика</em></h1><button class="btn small danger" id="resetStats">Сбросить статистику</button></div>
+      <div class="kpis">
+        <div class="kpi"><small>Сейчас</small><b id="kNow">—</b><span id="kNowS">не подключено</span></div>
+        <div class="kpi"><small>Сегодня</small><b id="kToday">0</b><span id="kTodayS"></span></div>
+        <div class="kpi"><small>За месяц</small><b id="kMonth">0</b><span id="kMonthS"></span></div>
+        <div class="kpi"><small>За всё время</small><b id="kTotal">0</b><span id="kTotalS"></span></div>
+      </div>
+      <div class="card"><h3>Скорость за последние 2 минуты</h3><canvas class="spd" id="spd"></canvas>
+        <div class="legend"><span><i style="background:var(--accent)"></i>↓ загрузка <b id="spdD">0</b></span><span><i style="background:var(--muted)"></i>↑ отдача <b id="spdU">0</b></span></div></div>
+      <div class="two">
+        <div class="card"><h3>По дням, за 30 дней</h3><div class="days" id="days"></div><div class="daysx" id="daysx"></div></div>
+        <div class="card"><h3>Серверы</h3><div id="srvStats"></div></div>
+      </div>
+      <div class="card"><h3>Соединения сейчас <span class="hint" id="connN"></span></h3><div class="tbl" id="conns"></div></div>
+    </section>
+
+    <section class="page inner" id="logs">
+      <h1>Журнал и <em>проверка</em></h1>
+      <div class="card">
+        <h3>Проверка всех режимов</h3>
+        <p class="hint">Приложение по очереди включит каждый режим: прокси, TUN на sing-box (три стека), Xray TUN и tun2proxy, с локальным DNS и без. Для каждого проверит, меняется ли адрес, идут ли обычные программы через VPN, работает ли DNS и держится ли связь. Это занимает около пяти минут, интернет в это время будет переключаться, обновление подписки и пинг подождут конца проверки. Для режимов TUN нужен запуск от имени администратора. Отчёт сохраняется во вкладке «Отчёт проверки».</p>
+        <div class="row"><button class="btn main" id="diagBtn">Проверить все режимы</button><button class="btn small" id="diagAdm" hidden>Перезапустить от имени администратора</button><span class="hint" id="diagStep"></span></div>
+        <div class="bar" id="diagBar" hidden><i id="diagFill" style="width:0"></i></div>
+        <div class="dres" id="diagRes"></div>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <div class="seg sm" id="ltabs" role="group" aria-label="Журналы"></div>
+        <div class="row"><button class="btn small" id="logCopy">Копировать</button><button class="btn small" id="logOpen">Открыть папку</button><button class="btn small danger" id="logClear">Очистить журналы</button></div>
+      </div>
+      <pre class="logbox" id="logbox"></pre>
+    </section>
+
+    <section class="page inner" id="hero">
+      <h1>Мой <em>герой</em></h1>
+      <p class="demo"><b>Черновик игры</b>Соберите своего человечка. Цены и уровни пока для примера: в черновике всё бесплатно.</p>
+      <div class="hx">
+        <div class="card hstage">
+          <div class="hbig" id="hvBody"></div>
+          <div class="pl" id="hState"><button type="button" data-st="off">Спит</button><button type="button" data-st="wait">Подключается</button><button type="button" data-st="on">Радуется</button></div>
+          <div class="pl moves" id="hMoves" hidden role="group" aria-label="Что делает герой, когда VPN включён"><button type="button" data-m="walk">Ходьба</button><button type="button" data-m="run">Бег</button><button type="button" data-m="idle">Стоит</button></div>
+          <input class="hname" id="hName" maxlength="24" placeholder="Придумайте имя герою" autocomplete="off" spellcheck="false">
+          <div class="lvl"><div class="lt"><b id="hLvl">Уровень 1</b><small id="hXp"></small></div><div class="bar"><i id="hXpBar" style="width:0"></i></div>
+            <small class="hint">Опыт копится, пока вы под защитой. Новые уровни открывают редкие вещи.</small></div>
+          <div class="row" style="justify-content:center"><button class="btn main" id="hSave" type="button">Сохранить героя</button><button class="btn small" id="hRand" type="button">Случайный</button><button class="btn small" id="hUndo" type="button">Как было</button></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:13px;min-width:0">
+          <div class="card"><h3>Готовые герои <span class="hint">нажмите, чтобы примерить</span></h3><div class="hpick" id="hPick"></div></div>
+          <div class="card"><div class="pl hcats" id="hCats"></div><div id="hOpts"></div></div>
+          <div class="fld bool" id="hBtnSw" tabindex="0" role="switch"><div>Показывать героя на кнопке<small>Если выключить, на главной будет обычная красная кнопка.</small></div><span class="tg"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page inner" id="gang">
+      <h1>Моя <em>банда</em></h1>
+      <p class="demo"><b>Пример</b>Так будет выглядеть банда. Друзья, очки и награды заработают, когда появятся аккаунты и свой сервер.</p>
+      <div class="gbanner"><div class="crest" id="gCrest"></div><div><h2>Красные тузы</h2><small id="gSub">Уровень 7 · 4 820 кристаллов банды</small></div></div>
+      <div class="card gstage">
+        <span class="v" id="gStage"></span>
+        <div class="seg sm crowd" id="gCrowd" role="group" aria-label="Кто стоит на кнопке"><button type="button" data-c="0">Один</button><button type="button" data-c="1">С друзьями</button></div>
+        <small class="hint">Так же переключается на главной под героем. Друзья пока для примера.</small>
+      </div>
+      <div class="g2">
+        <div class="card"><h3>Цель недели: 200 часов под защитой</h3><div class="bar"><i style="width:73%"></i></div><small class="hint">146 из 200 часов. Награда: сундук банды, каждому +2 ГБ и 100 кристаллов.</small></div>
+        <div class="card"><h3>Лига</h3><div class="bal" style="font-size:24px">Золотая лига</div><small class="hint">3 место из 30. Топ-5 переходят в лигу Тузов.</small></div>
+      </div>
+      <div class="card"><h3 id="gCount">Участники</h3><div id="gMembers"></div></div>
+      <div class="g2">
+        <div class="card"><h3>Позвать друга</h3><small class="hint">Друг ставит VPN по вашей ссылке, и вы оба получаете по 3 ГБ и 200 кристаллов.</small>
+          <div class="row"><span class="code">TUZ-7K2Q</span><button class="btn main small" type="button" data-demo>Отправить</button></div></div>
+        <div class="card"><h3>Бонусы банды</h3>
+          <div class="li"><span>3 друга в банде</span><span>+10% кристаллов</span></div>
+          <div class="li"><span>5 друзей</span><span>свой герб</span></div>
+          <div class="li"><span>Серия банды 7 дней</span><span>сундук</span></div>
+          <div class="li"><span>10 друзей</span><span>крылья для героя</span></div></div>
+      </div>
+    </section>
+
+    <section class="page inner" id="shop">
+      <h1>Крис<em>таллы</em></h1>
+      <p class="demo"><b>Пример</b>Так будут работать кристаллы. Начисления и покупки включатся вместе с аккаунтами.</p>
+      <div class="g2">
+        <div class="card"><small class="hint">Мои кристаллы</small><div class="bal" id="sBal">980</div></div>
+        <div class="card"><h3>Колесо удачи</h3><small class="hint">Крутите раз в день и выигрывайте гигабайты или вещи для героя.</small><div class="row"><button class="btn small" type="button" disabled>Бесплатно через 4 ч</button></div></div>
+      </div>
+      <div class="card"><h3>Серия: 9 дней под защитой</h3><div class="streak" id="sDays"></div></div>
+      <div class="g2">
+        <div class="card"><h3>Как заработать</h3>
+          <div class="li"><span>Быть под защитой</span><span>+10 в день</span></div>
+          <div class="li"><span>Пригласить друга</span><span>+200</span></div>
+          <div class="li"><span>Задание дня</span><span>+30</span></div>
+          <div class="li"><span>Сундук банды</span><span>+100</span></div>
+          <div class="li"><span>Лига недели</span><span>+500</span></div></div>
+        <div class="card"><h3>На что потратить</h3><div class="buy" id="sBuy"></div></div>
+      </div>
+      <div class="card" hidden><h3>Примерка для героя <span class="hint">нажмите, чтобы примерить на своего человечка</span></h3><div class="tryon" id="sTry"></div></div>
+    </section>
+
+    <section class="page inner" id="settings">
+      <h1>Наст<em>ройки</em></h1>
+      <div class="sx">
+        <nav class="snav" id="snav" aria-label="Разделы настроек"></nav>
+        <div class="spane" id="spane"></div>
+      </div>
+      <datalist id="dnsPresets"><option value="https://1.1.1.1/dns-query"><option value="https://8.8.8.8/dns-query"><option value="https://9.9.9.9/dns-query"><option value="tls://1.1.1.1"><option value="1.1.1.1"><option value="8.8.8.8"></datalist>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>/*THREE3D*/</script>
+<script>
+// avatar.js from the game folder (Игра\avatar.js): Memoji-style people
+// Человечки Премиум VPN в стиле мемоджи: свой SVG-генератор, ничего не взято у Apple.
+// avatarSVG(o, {mode:'body'|'head', state:'off'|'wait'|'on', still:false, fx:true}) -> '<svg class="av">…</svg>'
+// avatarScene(me, friends, {mode, state, pop}) -> одна сцена: герой на кнопке-платформе, друзья по бокам
+// AVATAR_CSS — анимации (вставить один раз в <style>). AV — списки вариантов, AV_PRESETS — готовые герои.
+(function (root) {
+  'use strict';
+  var seq = 0;
+
+  function rgb(h) {
+    h = String(h || '').replace('#', '');
+    var n = /^[0-9a-f]{6}$/i.test(h) ? parseInt(h, 16) : 0x888888;
+    return [n >> 16 & 255, n >> 8 & 255, n & 255];
+  }
+  // shade('#rrggbb', +20) lightens by 20%, -20 darkens
+  function shade(h, p) {
+    var t = p < 0 ? 0 : 255, f = Math.abs(p) / 100;
+    return '#' + rgb(h).map(function (v) { var x = Math.round(v + (t - v) * f); return (x < 16 ? '0' : '') + x.toString(16); }).join('');
+  }
+  function lum(h) { var c = rgb(h); return (c[0] * 299 + c[1] * 587 + c[2] * 114) / 255000; }
+  function n1(v) { return Math.round(v * 10) / 10; }
+
+  // ---------- options (the order is the order in the editor) ----------
+  var AV = {
+    ages: [
+      ['kid', 'Пупсик'], ['teen', 'Подросток'], ['adult', 'Взрослый']],
+    builds: [['slim', 'Стройный'], ['normal', 'Обычный'], ['strong', 'Крепкий']],
+    faces: [['round', 'Круглое'], ['oval', 'Овальное'], ['square', 'Квадратное']],
+    skins: ['#ffe3cc', '#f9d3b4', '#f1c39f', '#e8b48f', '#d9a074', '#c68a5d', '#a96f47', '#8d5636', '#6f3f25', '#4f2c1a'],
+    hairs: [
+      ['short', 'Короткая'], ['side', 'Чёлка набок'], ['buzz', 'Ёжик'], ['spiky', 'Шипы'], ['curly', 'Кудри'], ['afro', 'Афро'],
+      ['long', 'Длинные'], ['wavy', 'Волны'], ['bob', 'Каре'], ['ponytail', 'Хвост'], ['bun', 'Пучок'], ['pigtails', 'Хвостики'],
+      ['mohawk', 'Ирокез'], ['balding', 'Залысины'], ['bald', 'Лысый']],
+    hairColors: ['#17120f', '#2e1d14', '#5a3a22', '#8a5a32', '#c89a5a', '#ecca7e', '#b5481f', '#9b9b9b', '#e6e2dc',
+      '#ff5c8a', '#3d7bf5', '#8e6cef', '#e3262f', '#2ec4b6'],
+    eyes: [['round', 'Круглые'], ['almond', 'Миндаль'], ['lashes', 'С ресницами'], ['sleepy', 'Прищур']],
+    eyeColors: ['#4a2c17', '#1d1310', '#7a5a2b', '#3f7a3a', '#3d78c9', '#6f7f8f', '#2ec4b6', '#a23cd6'],
+    brows: [['normal', 'Обычные'], ['thin', 'Тонкие'], ['thick', 'Густые'], ['arched', 'Домиком']],
+    beards: [['none', 'Нет'], ['stubble', 'Щетина'], ['mustache', 'Усы'], ['goatee', 'Бородка'], ['full', 'Борода']],
+    glasses: [['none', 'Нет', 0], ['round', 'Круглые', 60], ['square', 'Квадратные', 60], ['nerd', 'Толстая оправа', 80],
+      ['sun', 'Тёмные', 120], ['up', 'Очки на голове', 120], ['star', 'Звёзды', 150, 2], ['heart', 'Сердечки', 150, 2]],
+    hats: [['none', 'Нет', 0], ['cap', 'Кепка', 60], ['beanie', 'Шапка', 80], ['headband', 'Повязка', 40], ['bow', 'Бантик', 40],
+      ['flowers', 'Венок', 120, 2], ['headphones', 'Наушники', 150, 3], ['party', 'Колпак', 90], ['ears', 'Ушки', 250, 5],
+      ['cowboy', 'Ковбойская', 200, 4], ['crown', 'Корона', 500, 8]],
+    tops: [['tee', 'Футболка', 0], ['hoodie', 'Худи', 0], ['sweater', 'Свитер', 100], ['jacket', 'Бомбер', 180],
+      ['sport', 'Олимпийка', 150], ['overalls', 'Комбинезон', 120], ['dress', 'Платье', 150], ['puffer', 'Пуховик', 250, 3], ['suit', 'Костюм', 300, 4]],
+    bottoms: [['jeans', 'Джинсы', 0], ['joggers', 'Спортивные', 0], ['shorts', 'Шорты', 50], ['skirt', 'Юбка', 80]],
+    shoes: [['sneakers', 'Кроссовки', 0], ['high', 'Кеды', 60], ['boots', 'Ботинки', 120]],
+    extras: [['none', 'Нет', 0], ['backpack', 'Рюкзак', 200, 2], ['cape', 'Плащ героя', 600, 6], ['wings', 'Крылья', 1000, 10]],
+    colors: ['#e3262f', '#1c1c22', '#ffffff', '#2f4b7c', '#3d7bf5', '#2ec4b6', '#3f9b5a', '#f2c14e', '#ff8a3d', '#ff7ab6', '#8e6cef', '#8a5a32', '#9aa0a6'],
+    lips: ['', '#c9475a', '#e3262f', '#a8326e', '#d9826f']
+  };
+
+  var DEF = {
+    age: 'adult', build: 'normal', face: 'round', skin: '#e8b48f', hair: 'short', hairColor: '#2e1d14', eyes: 'round', eyeColor: '#4a2c17',
+    brows: 'normal', beard: 'none', freckles: false, lips: '', earrings: false, glasses: 'none', hat: 'none', hatColor: '#e3262f',
+    top: 'hoodie', topColor: '#e3262f', bottom: 'jeans', bottomColor: '#2f4b7c', shoes: 'sneakers', shoeColor: '#ffffff', extra: 'none'
+  };
+
+  function ids(list) { return list.map(function (x) { return x[0]; }); }
+  function pick(v, list, d) { return list.indexOf(v) >= 0 ? v : d; }
+  function col(v, d) { return /^#[0-9a-f]{6}$/i.test(v || '') ? v : d; }
+  // avNormalize: any object (old, broken or hand-edited) -> a full valid avatar
+  function avNormalize(o) {
+    o = o && typeof o === 'object' ? o : {};
+    var r = {};
+    r.age = pick(o.age, ids(AV.ages), DEF.age);
+    r.build = pick(o.build, ids(AV.builds), DEF.build);
+    r.face = pick(o.face, ids(AV.faces), DEF.face);
+    r.skin = col(o.skin, DEF.skin);
+    r.hair = pick(o.hair, ids(AV.hairs), DEF.hair);
+    r.hairColor = col(o.hairColor, DEF.hairColor);
+    r.eyes = pick(o.eyes, ids(AV.eyes), DEF.eyes);
+    r.eyeColor = col(o.eyeColor, DEF.eyeColor);
+    r.brows = pick(o.brows, ids(AV.brows), DEF.brows);
+    r.beard = pick(o.beard, ids(AV.beards), DEF.beard);
+    if (r.age === 'kid') r.beard = 'none';
+    r.freckles = !!o.freckles;
+    r.lips = o.lips ? col(o.lips, '') : '';
+    r.earrings = !!o.earrings;
+    r.glasses = pick(o.glasses, ids(AV.glasses), DEF.glasses);
+    r.hat = pick(o.hat, ids(AV.hats), DEF.hat);
+    r.hatColor = col(o.hatColor, DEF.hatColor);
+    r.top = pick(o.top, ids(AV.tops), DEF.top);
+    r.topColor = col(o.topColor, DEF.topColor);
+    r.bottom = pick(o.bottom, ids(AV.bottoms), DEF.bottom);
+    r.bottomColor = col(o.bottomColor, DEF.bottomColor);
+    r.shoes = pick(o.shoes, ids(AV.shoes), DEF.shoes);
+    r.shoeColor = col(o.shoeColor, DEF.shoeColor);
+    r.extra = pick(o.extra, ids(AV.extras), DEF.extra);
+    if (o.model === 'meshy') { r.model = 'meshy'; r.char = ['ninja', 'girl', 'coat', 'pink', 'dress', 'bomber', 'blazer', 'muscle'].indexOf(o.char) >= 0 ? o.char : 'ninja'; } // the user's standing Meshy figures (the walking people were removed in 0.17.1)
+    if (typeof o.name === 'string') r.name = o.name.slice(0, 24);
+    return r;
+  }
+  function any(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function avRandom() {
+    var age = any(ids(AV.ages)), hc = Math.random() < .8 ? any(AV.hairColors.slice(0, 9)) : any(AV.hairColors);
+    return avNormalize({
+      age: age, build: any(ids(AV.builds)), face: any(ids(AV.faces)), skin: any(AV.skins), hair: any(ids(AV.hairs).slice(0, 13)), hairColor: hc,
+      eyes: any(ids(AV.eyes)), eyeColor: any(AV.eyeColors.slice(0, 6)), brows: any(ids(AV.brows)),
+      beard: age === 'kid' || Math.random() < .55 ? 'none' : any(ids(AV.beards)), freckles: Math.random() < .2,
+      lips: Math.random() < .25 ? any(AV.lips) : '', earrings: Math.random() < .25,
+      glasses: Math.random() < .6 ? 'none' : any(ids(AV.glasses)), hat: Math.random() < .45 ? 'none' : any(ids(AV.hats)), hatColor: any(AV.colors),
+      top: any(ids(AV.tops)), topColor: any(AV.colors), bottom: any(ids(AV.bottoms)), bottomColor: any(['#2f4b7c', '#1c1c22', '#9aa0a6', '#8a5a32', '#3f9b5a', '#3d7bf5', '#f2c14e']),
+      shoes: any(ids(AV.shoes)), shoeColor: any(['#ffffff', '#1c1c22', '#e3262f', '#f2c14e', '#3d7bf5']),
+      extra: Math.random() < .8 ? 'none' : any(ids(AV.extras))
+    });
+  }
+
+  // body proportions per age; k = head scale, e = eye scale
+  var AGE = {
+    kid: { k: .98, e: 1.18, legs: 44, torso: 46, sh: 27, hip: 24, arm: 11, up: 22, lo: 20 },
+    teen: { k: .92, e: 1.1, legs: 70, torso: 60, sh: 29, hip: 21, arm: 9.5, up: 30, lo: 28 },
+    adult: { k: .92, e: 1.06, legs: 82, torso: 68, sh: 33, hip: 24, arm: 10.5, up: 36, lo: 33 },
+    senior: { k: .86, e: 1, legs: 88, torso: 70, sh: 34, hip: 25, arm: 10.5, up: 35, lo: 32 }
+  };
+  var BUILD = { slim: .88, normal: 1, strong: 1.17 };
+  var HEAD = {
+    round: 'M0 -60C34 -60 54 -38 54 -6C54 22 42 44 22 54C12 59 -12 59 -22 54C-42 44 -54 22 -54 -6C-54 -38 -34 -60 0 -60Z',
+    oval: 'M0 -62C31 -62 50 -40 50 -6C50 28 32 59 0 61C-32 59 -50 28 -50 -6C-50 -40 -31 -62 0 -62Z',
+    square: 'M0 -60C34 -60 54 -40 54 -8C54 22 47 44 28 54C16 59 -16 59 -28 54C-47 44 -54 22 -54 -8C-54 -40 -34 -60 0 -60Z'
+  };
+  var KIDHEAD = 'M0 -58C35 -58 56 -36 56 -3C56 26 42 48 20 55C10 58 -10 58 -20 55C-42 48 -56 26 -56 -3C-56 -36 -35 -58 0 -58Z';
+  var LONG_SLEEVE = { hoodie: 1, sweater: 1, jacket: 1, sport: 1, puffer: 1, suit: 1 };
+  var COVER_HAT = { cap: 1, beanie: 1, cowboy: 1 };
+
+  // ---------- hair: back layer (behind the head and body) and front layer ----------
+  function curls(cx, cy, r, from, to, n, size) {
+    var s = '';
+    for (var i = 0; i < n; i++) {
+      var a = (from + (to - from) * i / (n - 1)) * Math.PI / 180;
+      s += '<circle cx="' + n1(cx + Math.cos(a) * r) + '" cy="' + n1(cy + Math.sin(a) * r) + '" r="' + n1(size * (i % 2 ? .86 : 1)) + '"/>';
+    }
+    return s;
+  }
+  function hairBack(o, H) {
+    var f = 'fill="url(#' + H + ')"';
+    switch (o.hair) {
+      case 'long': return '<path ' + f + ' d="M-58 -10C-64 -62 -30 -77 0 -77C30 -77 64 -62 58 -10L63 70C40 82 -40 82 -63 70Z"/>';
+      case 'wavy': return '<path ' + f + ' d="M-58 -12C-64 -62 -30 -77 0 -77C30 -77 64 -62 58 -12C66 4 58 18 66 32C72 46 60 58 66 72C40 84 -40 84 -66 72C-60 58 -72 46 -66 32C-58 18 -66 4 -58 -12Z"/>';
+      case 'bob': return '<path ' + f + ' d="M-58 -10C-62 -60 -30 -75 0 -75C30 -75 62 -60 58 -10L61 34Q0 46 -61 34Z"/>';
+      case 'afro': return '<g ' + f + '><circle cx="0" cy="-24" r="74"/>' + curls(0, -24, 72, 150, 390, 17, 12) + '</g>';
+      case 'bun': return '<g ' + f + '><circle cx="0" cy="-76" r="19"/><circle cx="-8" cy="-82" r="8" fill="#fff" opacity=".12"/></g>';
+      case 'ponytail': return '<g class="av-sway" style="transform-origin:38px -46px"><path ' + f + ' d="M30 -52C72 -60 84 -12 70 30C64 50 52 60 44 52C60 22 58 -20 34 -32Z"/></g>';
+      case 'pigtails': return '<g class="av-sway" style="transform-origin:-50px -24px"><path ' + f + ' d="M-48 -34C-86 -40 -96 6 -80 34C-74 44 -64 42 -66 32C-76 8 -72 -16 -48 -22Z"/></g>' +
+        '<g class="av-sway2" style="transform-origin:50px -24px"><path ' + f + ' d="M48 -34C86 -40 96 6 80 34C74 44 64 42 66 32C76 8 72 -16 48 -22Z"/></g>';
+      case 'curly': return '<g ' + f + '>' + curls(0, -14, 56, 175, 365, 12, 15) + '</g>';
+    }
+    return '';
+  }
+  function hairFront(o, H, kid) {
+    var f = 'fill="url(#' + H + ')"', hl = shade(o.hairColor, 30), sheen = function (d) { return '<path d="' + d + '" fill="none" stroke="' + hl + '" stroke-width="3" stroke-linecap="round" opacity=".45"/>'; };
+    switch (o.hair) {
+      case 'short': return '<path ' + f + ' d="M-55 2C-61 -44 -34 -73 2 -72C37 -71 61 -46 55 2C53 -10 50 -22 46 -28C36 -38 20 -35 6 -40C-6 -32 -24 -36 -38 -32C-46 -26 -52 -12 -55 2Z"/>' + sheen('M-26 -60Q2 -70 28 -60');
+      case 'buzz': return '<path ' + f + ' opacity=".92" d="M-54 -4C-56 -47 -32 -65 0 -65C32 -65 56 -47 54 -4C50 -20 46 -32 36 -37C20 -43 -20 -43 -36 -37C-46 -32 -50 -20 -54 -4Z"/>';
+      case 'side': return '<path ' + f + ' d="M-55 4C-62 -40 -40 -79 4 -79C42 -79 63 -52 56 2C54 -12 50 -24 44 -30C30 -22 6 -20 -14 -25C-28 -28 -38 -32 -44 -26C-50 -18 -53 -6 -55 4Z"/>' + sheen('M-30 -62Q6 -76 34 -56') + sheen('M-14 -40Q14 -36 36 -44');
+      case 'spiky': return '<path ' + f + ' d="M-55 0C-60 -30 -57 -50 -47 -58L-52 -77L-33 -67L-27 -88L-12 -71L0 -94L10 -71L26 -88L31 -67L51 -75L46 -57C56 -48 60 -30 55 0C52 -18 44 -30 31 -34L21 -26L12 -37L0 -28L-12 -37L-22 -27L-32 -34C-44 -30 -52 -18 -55 0Z"/>';
+      case 'curly': return '<path ' + f + ' d="M-55 2C-60 -46 -32 -70 0 -70C32 -70 60 -46 55 2C52 -18 42 -34 0 -34C-42 -34 -52 -18 -55 2Z"/><g ' + f + '>' + curls(0, -40, 40, 190, 350, 9, 11) + '</g>';
+      case 'afro': return '<path ' + f + ' d="M-56 0C-62 -50 -34 -76 0 -76C34 -76 62 -50 56 0C52 -22 40 -38 0 -38C-40 -38 -52 -22 -56 0Z"/><g ' + f + '>' + curls(0, -40, 42, 195, 345, 8, 9) + '</g>';
+      case 'long': return '<path ' + f + ' d="M0 -71C-30 -71 -55 -51 -57 -20L-59 40C-57 50 -51 52 -46 48C-48 20 -46 -10 -36 -30C-24 -44 -8 -50 0 -55C8 -50 24 -44 36 -30C46 -10 48 20 46 48C51 52 57 50 59 40L57 -20C55 -51 30 -71 0 -71Z"/>' + sheen('M-34 -56Q-50 -36 -51 -6') + sheen('M34 -56Q50 -36 51 -6');
+      case 'wavy': return '<path ' + f + ' d="M0 -71C-30 -71 -55 -51 -57 -20C-62 -4 -54 8 -60 22C-64 34 -54 46 -46 46C-50 30 -42 18 -46 2C-48 -14 -40 -28 -30 -38C-18 -48 -6 -50 0 -54C6 -50 18 -48 30 -38C40 -28 48 -14 46 2C42 18 50 30 46 46C54 46 64 34 60 22C54 8 62 -4 57 -20C55 -51 30 -71 0 -71Z"/>' + sheen('M-30 -58Q-48 -40 -50 -16');
+      case 'bob': return '<path ' + f + ' d="M-58 30C-63 -10 -60 -67 0 -71C60 -67 63 -10 58 30C54 34 50 32 48 28C50 2 48 -12 44 -20Q0 -12 -44 -20C-48 -12 -50 2 -48 28C-50 32 -54 34 -58 30Z"/>' + sheen('M-30 -58Q0 -68 30 -58');
+      case 'ponytail': case 'bun': return '<path ' + f + ' d="M-55 0C-60 -47 -32 -71 0 -71C32 -71 60 -47 55 0C52 -22 40 -41 0 -43C-40 -41 -52 -22 -55 0Z"/>' + sheen('M-22 -62Q0 -68 22 -62') +
+        (o.hair === 'ponytail' ? '<rect x="32" y="-52" width="9" height="12" rx="4" fill="' + o.hatColor + '" transform="rotate(-30 36 -46)"/>' : '<rect x="-12" y="-62" width="24" height="7" rx="3.5" fill="' + o.hatColor + '"/>');
+      case 'pigtails': return '<path ' + f + ' d="M-56 6C-62 -46 -32 -71 0 -71C32 -71 62 -46 56 6C52 -8 48 -20 42 -24Q22 -30 4 -42Q-12 -30 -42 -24C-48 -20 -52 -8 -56 6Z"/>' +
+        '<circle cx="-50" cy="-28" r="6" fill="' + o.hatColor + '"/><circle cx="50" cy="-28" r="6" fill="' + o.hatColor + '"/>';
+      case 'mohawk': return '<path ' + f + ' opacity=".35" d="M-54 -4C-56 -47 -32 -64 0 -64C32 -64 56 -47 54 -4C50 -20 46 -32 36 -37C20 -43 -20 -43 -36 -37C-46 -32 -50 -20 -54 -4Z"/>' +
+        '<path ' + f + ' d="M-11 -58L-17 -80L-7 -74L-5 -100L3 -78L10 -96L12 -74L20 -84L11 -56Q0 -60 -11 -58Z"/>';
+      case 'balding': return '<g ' + f + '><path d="M-55 6C-59 -16 -55 -32 -46 -40C-43 -26 -44 -10 -47 6Z"/><path d="M55 6C59 -16 55 -32 46 -40C43 -26 44 -10 47 6Z"/></g>';
+    }
+    return '';
+  }
+
+  // ---------- hats (head-local coordinates, head top is y=-60) ----------
+  function hat(o, id) {
+    var c = o.hatColor, d = shade(c, -22), l = shade(c, 22), t = '';
+    switch (o.hat) {
+      case 'cap':
+        return '<path fill="url(#' + id + 'ht)" d="M-56 -22C-58 -62 -30 -78 0 -78C30 -78 58 -62 56 -22Q0 -32 -56 -22Z"/>' +
+          '<path fill="' + d + '" d="M-52 -26Q0 -38 52 -26Q50 -12 0 -10Q-50 -12 -52 -26Z"/><circle cx="0" cy="-77" r="4" fill="' + d + '"/>' +
+          '<path d="M-22 -72Q-26 -50 -24 -30M22 -72Q26 -50 24 -30" stroke="' + d + '" stroke-width="1.5" fill="none" opacity=".6"/>';
+      case 'beanie':
+        for (var i = -40; i <= 40; i += 10) t += '<path d="M' + i + ' -27L' + i + ' -15" stroke="' + d + '" stroke-width="2" opacity=".6"/>';
+        return '<path fill="url(#' + id + 'ht)" d="M-56 -18C-58 -66 -30 -80 0 -80C30 -80 58 -66 56 -18Z"/><circle cx="0" cy="-84" r="11" fill="' + l + '"/><circle cx="-3" cy="-87" r="4" fill="#fff" opacity=".35"/>' +
+          '<rect x="-58" y="-30" width="116" height="17" rx="8.5" fill="' + d + '"/>' + t;
+      case 'headband':
+        return '<path d="M-54 -26Q0 -44 54 -26L54 -16Q0 -34 -54 -16Z" fill="' + c + '"/><path d="M-54 -21Q0 -39 54 -21" stroke="#fff" stroke-width="2" fill="none" opacity=".7"/>';
+      case 'bow':
+        return '<g transform="translate(30 -56) rotate(18)"><path d="M0 0L-22 -12Q-26 0 -22 12Z M0 0L22 -12Q26 0 22 12Z" fill="' + c + '"/><path d="M0 0L-18 -8M0 0L18 -8" stroke="' + l + '" stroke-width="2"/><circle r="6" fill="' + d + '"/></g>';
+      case 'flowers':
+        [[-46, -40], [-32, -56], [-12, -64], [10, -64], [30, -57], [46, -42]].forEach(function (p, i) {
+          var fc = ['#ff7ab6', '#f2c14e', '#ffffff', '#ff8a3d', '#ff5c8a', '#8e6cef'][i];
+          t += '<g transform="translate(' + p[0] + ' ' + p[1] + ')"><circle cx="-4" r="5" fill="' + fc + '"/><circle cx="4" r="5" fill="' + fc + '"/><circle cy="-4" r="5" fill="' + fc + '"/><circle cy="4" r="5" fill="' + fc + '"/><circle r="3" fill="#f2c14e"/></g>';
+        });
+        return '<path d="M-50 -34Q0 -78 50 -34" stroke="#3f9b5a" stroke-width="4" fill="none"/>' + t;
+      case 'headphones':
+        return '<path d="M-56 -4C-60 -84 60 -84 56 -4" stroke="#24242b" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M-50 -40C-40 -70 40 -70 50 -40" stroke="' + c + '" stroke-width="3" fill="none" opacity=".9"/>' +
+          '<rect x="-66" y="-12" width="17" height="30" rx="8" fill="#24242b"/><rect x="49" y="-12" width="17" height="30" rx="8" fill="#24242b"/>' +
+          '<rect x="-63" y="-8" width="7" height="22" rx="3.5" fill="' + c + '"/><rect x="56" y="-8" width="7" height="22" rx="3.5" fill="' + c + '"/>';
+      case 'party':
+        return '<g transform="rotate(-12 0 -60)"><path d="M-24 -56L0 -112L24 -56Z" fill="url(#' + id + 'ht)"/><path d="M-17 -72L17 -72M-10 -88L10 -88" stroke="#fff" stroke-width="4" opacity=".8"/><circle cx="0" cy="-113" r="7" fill="#f2c14e"/></g>';
+      case 'ears':
+        return '<path d="M-50 -38Q-56 -86 -18 -62Z" fill="' + c + '"/><path d="M-44 -46Q-48 -72 -26 -60Z" fill="#ff9fbf"/>' +
+          '<path d="M50 -38Q56 -86 18 -62Z" fill="' + c + '"/><path d="M44 -46Q48 -72 26 -60Z" fill="#ff9fbf"/><path d="M-50 -38Q0 -78 50 -38" stroke="' + d + '" stroke-width="4" fill="none"/>';
+      case 'cowboy':
+        return '<path fill="url(#' + id + 'ht)" d="M-38 -24C-40 -70 -26 -86 -12 -84Q0 -76 12 -84C26 -86 40 -70 38 -24Z"/>' +
+          '<path d="M-38 -38Q0 -46 38 -38L38 -28Q0 -36 -38 -28Z" fill="' + d + '"/>' +
+          '<path fill="' + shade(c, -10) + '" d="M-84 -30Q-80 -16 -50 -18Q0 -10 50 -18Q80 -16 84 -30Q60 -26 0 -32Q-60 -26 -84 -30Z"/>';
+      case 'crown':
+        return '<path d="M-36 -62L-40 -98L-20 -78L0 -104L20 -78L40 -98L36 -62Q0 -70 -36 -62Z" fill="url(#' + id + 'gd)" stroke="#a5781c" stroke-width="1.5" stroke-linejoin="round"/>' +
+          '<circle cx="0" cy="-74" r="5" fill="#e3262f"/><circle cx="-24" cy="-70" r="3.5" fill="#3d7bf5"/><circle cx="24" cy="-70" r="3.5" fill="#3f9b5a"/>' +
+          '<circle cx="-40" cy="-99" r="3.5" fill="#fff3c4"/><circle cx="0" cy="-105" r="3.5" fill="#fff3c4"/><circle cx="40" cy="-99" r="3.5" fill="#fff3c4"/>';
+    }
+    return '';
+  }
+
+  function glasses(o, e) {
+    var ex = 19, ey = 4, s = '';
+    switch (o.glasses) {
+      case 'round':
+        return '<g fill="#fff" fill-opacity=".14" stroke="#2a2a30" stroke-width="2.6"><circle cx="-19" cy="4" r="' + n1(14.5 * e) + '"/><circle cx="19" cy="4" r="' + n1(14.5 * e) + '"/></g><path d="M-6 1Q0 -3 6 1M-33 1L-52 -3M33 1L52 -3" stroke="#2a2a30" stroke-width="2.6" fill="none"/>';
+      case 'square': case 'nerd':
+        var w = o.glasses === 'nerd' ? 4.6 : 2.6, cc = o.glasses === 'nerd' ? '#141414' : '#5b3a26';
+        return '<g fill="#fff" fill-opacity=".14" stroke="' + cc + '" stroke-width="' + w + '"><rect x="-35" y="-9" width="31" height="25" rx="7"/><rect x="4" y="-9" width="31" height="25" rx="7"/></g><path d="M-4 0Q0 -3 4 0M-35 0L-52 -3M35 0L52 -3" stroke="' + cc + '" stroke-width="' + w + '" fill="none"/>';
+      case 'sun':
+        return '<g fill="#17171c" stroke="#c9a14a" stroke-width="2"><path d="M-35 -7Q-19 -12 -5 -7Q-4 12 -18 16Q-34 14 -35 -7Z"/><path d="M35 -7Q19 -12 5 -7Q4 12 18 16Q34 14 35 -7Z"/></g>' +
+          '<path d="M-28 -3L-22 6M12 -3L18 6" stroke="#fff" stroke-width="2.4" opacity=".5"/><path d="M-5 -6Q0 -9 5 -6M-35 -5L-52 -4M35 -5L52 -4" stroke="#c9a14a" stroke-width="2" fill="none"/>';
+      case 'star':
+        [-19, 19].forEach(function (x) {
+          var p = [];
+          for (var i = 0; i < 10; i++) { var a = (i * 36 - 90) * Math.PI / 180, r = i % 2 ? 7.5 : 17; p.push(n1(x + Math.cos(a) * r) + ',' + n1(ey + 1 + Math.sin(a) * r)); }
+          s += '<polygon points="' + p.join(' ') + '" fill="#ff5c8a" fill-opacity=".55" stroke="#ff5c8a" stroke-width="2.4" stroke-linejoin="round"/>';
+        });
+        return s + '<path d="M-6 2L6 2" stroke="#ff5c8a" stroke-width="2.4"/>';
+      case 'heart':
+        [-19, 19].forEach(function (x) {
+          s += '<path transform="translate(' + x + ' ' + (ey - 6) + ')" d="M0 20C-26 4 -16 -14 0 -4C16 -14 26 4 0 20Z" fill="#e3262f" fill-opacity=".6" stroke="#e3262f" stroke-width="2.4" stroke-linejoin="round"/>';
+        });
+        return s + '<path d="M-6 2L6 2" stroke="#e3262f" stroke-width="2.4"/>';
+    }
+    return '';
+  }
+
+  function eye(x, ey, e, o, id, state, side) {
+    var dark = '#2b1a16';
+    if (state === 'off') {
+      return '<path d="M' + n1(x - 10 * e) + ' ' + (ey + 1) + 'Q' + x + ' ' + n1(ey + 7 * e) + ' ' + n1(x + 10 * e) + ' ' + (ey + 1) + '" stroke="' + dark + '" stroke-width="2.8" fill="none" stroke-linecap="round"/>' +
+        (o.eyes === 'lashes' ? '<path d="M' + n1(x + side * 8 * e) + ' ' + n1(ey + 3) + 'l' + side * 3 + ' 3" stroke="' + dark + '" stroke-width="2" stroke-linecap="round"/>' : '');
+    }
+    var rx = (o.eyes === 'almond' ? 13.4 : 12.6) * e, ry = (o.eyes === 'almond' ? 11.6 : o.eyes === 'sleepy' ? 12.6 : 14) * e;
+    var cid = id + 'c' + (side > 0 ? 'r' : 'l');
+    var lid = '<path d="M' + n1(x - rx + 1) + ' ' + n1(ey - ry - 4) + 'Q' + x + ' ' + n1(ey - ry - 9) + ' ' + n1(x + rx - 1) + ' ' + n1(ey - ry - 4) + '" stroke="' + shade(o.skin, -30) + '" stroke-width="1.3" fill="none" opacity=".25" stroke-linecap="round"/>' +
+      '<path d="M' + n1(x - rx - .5) + ' ' + ey + 'A' + n1(rx + .5) + ' ' + n1(ry + .5) + ' 0 0 1 ' + n1(x + rx + .5) + ' ' + ey + '" stroke="' + dark + '" stroke-width="' + (o.eyes === 'lashes' ? 3.8 : 3) + '" fill="none" stroke-linecap="round"/>';
+    if (o.eyes === 'lashes') lid += '<path d="M' + n1(x + side * (rx - 1)) + ' ' + n1(ey - ry * .45) + 'l' + side * 5 + ' -4M' + n1(x + side * (rx - 4.5)) + ' ' + n1(ey - ry * .8) + 'l' + side * 3.5 + ' -4.5" stroke="' + dark + '" stroke-width="2.2" stroke-linecap="round"/>';
+    else lid += '<path d="M' + n1(x + side * rx) + ' ' + n1(ey - 1) + 'l' + side * 3.5 + ' -3" stroke="' + dark + '" stroke-width="2.2" stroke-linecap="round"/>';
+    if (o.eyes === 'sleepy') lid += '<path d="M' + n1(x - rx) + ' ' + ey + 'A' + n1(rx) + ' ' + n1(ry) + ' 0 0 1 ' + n1(x + rx) + ' ' + ey + 'L' + n1(x + rx) + ' ' + n1(ey - ry * .1) + 'Q' + x + ' ' + n1(ey - ry * .55) + ' ' + n1(x - rx) + ' ' + n1(ey - ry * .1) + 'Z" fill="url(#' + id + 'sk)"/>' +
+      '<path d="M' + n1(x - rx) + ' ' + n1(ey - ry * .12) + 'Q' + x + ' ' + n1(ey - ry * .58) + ' ' + n1(x + rx) + ' ' + n1(ey - ry * .12) + '" stroke="' + dark + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+    var ir = 10.4 * e * (o.eyes === 'almond' ? .92 : 1);
+    return '<g class="av-blink" style="transform-origin:' + x + 'px ' + ey + 'px">' +
+      '<clipPath id="' + cid + '"><ellipse cx="' + x + '" cy="' + ey + '" rx="' + n1(rx) + '" ry="' + n1(ry) + '"/></clipPath>' +
+      '<ellipse cx="' + x + '" cy="' + ey + '" rx="' + n1(rx) + '" ry="' + n1(ry) + '" fill="url(#' + id + 'sc)"/>' +
+      '<g clip-path="url(#' + cid + ')"><g class="av-look">' +
+      '<circle cx="' + n1(x + side * .6) + '" cy="' + n1(ey + 1.2) + '" r="' + n1(ir) + '" fill="url(#' + id + 'ir)" stroke="' + shade(o.eyeColor, -55) + '" stroke-width="1.2"/>' +
+      '<circle cx="' + n1(x + side * .6) + '" cy="' + n1(ey + 1.2) + '" r="' + n1(ir * .58) + '" fill="#120b09"/>' +
+      '<circle cx="' + n1(x + 3.2 * e) + '" cy="' + n1(ey - 3.4 * e) + '" r="' + n1(3.3 * e) + '" fill="#fff"/>' +
+      '<circle cx="' + n1(x - 2.8 * e) + '" cy="' + n1(ey + 4 * e) + '" r="' + n1(1.3 * e) + '" fill="#fff" opacity=".85"/></g>' +
+      '<ellipse cx="' + x + '" cy="' + n1(ey - ry) + '" rx="' + n1(rx) + '" ry="' + n1(ry * .35) + '" fill="#6b4a40" opacity=".18"/></g>' +
+      lid + '</g>';
+  }
+
+  function face(o, id, state, kid) {
+    var a = AGE[o.age], e = a.e, ey = kid ? 6 : 4, s = '', dark = '#2b1a16';
+    var fun = AV.hairColors.indexOf(o.hairColor) > 8, browC = o.hair === 'bald' ? shade(o.skin, -35) : fun ? '#3a2a20' : shade(o.hairColor, lum(o.hairColor) > .7 ? -30 : -12);
+    // cheeks
+    s += '<ellipse cx="-31" cy="' + (ey + 21) + '" rx="12" ry="7.5" fill="url(#' + id + 'ck)" opacity="' + (state === 'on' ? 1 : .65) + '"/><ellipse cx="31" cy="' + (ey + 21) + '" rx="12" ry="7.5" fill="url(#' + id + 'ck)" opacity="' + (state === 'on' ? 1 : .65) + '"/>';
+    if (o.freckles) [[-25, 15], [-31, 19], [-36, 14], [-28, 22], [25, 15], [31, 19], [36, 14], [28, 22]].forEach(function (p) { s += '<circle cx="' + p[0] + '" cy="' + (p[1] + ey) + '" r="1.25" fill="' + shade(o.skin, -38) + '" opacity=".6"/>'; });
+    if (o.age === 'senior') {
+      var w = shade(o.skin, -28);
+      s += '<path d="M-20 -37Q0 -41 20 -37M-14 -31Q0 -34 14 -31" stroke="' + w + '" stroke-width="1.6" fill="none" opacity=".45" stroke-linecap="round"/>' +
+        '<path d="M-27 ' + (ey + 15) + 'Q-19 ' + (ey + 19) + ' -11 ' + (ey + 15) + 'M27 ' + (ey + 15) + 'Q19 ' + (ey + 19) + ' 11 ' + (ey + 15) + '" stroke="' + w + '" stroke-width="1.5" fill="none" opacity=".4" stroke-linecap="round"/>' +
+        '<path d="M-17 25Q-22 33 -17 41M17 25Q22 33 17 41" stroke="' + w + '" stroke-width="1.6" fill="none" opacity=".35" stroke-linecap="round"/>';
+    }
+    // eyes
+    s += '<g class="av-eyes">' + eye(-19, ey, e, o, id, state, -1) + eye(19, ey, e, o, id, state, 1) + '</g>';
+    // brows
+    var bw = { thin: 2.8, normal: 4.2, thick: 6, arched: 4 }[o.brows], by = ey - 17 * e - (state === 'on' ? 3 : state === 'off' ? -2 : 0);
+    var arc = o.brows === 'arched' ? 9 : 5;
+    var rb = state === 'wait' ? 5 : 0;
+    s += '<g stroke="' + browC + '" stroke-width="' + bw + '" fill="none" stroke-linecap="round">' +
+      '<path d="M-31 ' + n1(by + 2) + 'Q-20 ' + n1(by - arc) + ' -8 ' + n1(by + (o.brows === 'arched' ? 3 : 0)) + '"/>' +
+      '<path d="M31 ' + n1(by + 2 - rb) + 'Q20 ' + n1(by - arc - rb) + ' 8 ' + n1(by + (o.brows === 'arched' ? 3 : 0) - rb * .4) + '"/></g>';
+    // nose
+    var ny = kid ? 21 : 20;
+    s += '<ellipse cx="0" cy="' + (ny + 1) + '" rx="' + (kid ? 6 : 7.5) + '" ry="4.6" fill="' + shade(o.skin, -16) + '" opacity=".5"/>' +
+      '<path d="M-4.6 ' + ny + 'Q0 ' + (ny + 4.4) + ' 4.6 ' + ny + '" stroke="' + shade(o.skin, -34) + '" stroke-width="1.6" fill="none" opacity=".55" stroke-linecap="round"/>' +
+      '<ellipse cx="0" cy="' + (ny - 5) + '" rx="3.6" ry="4.6" fill="' + shade(o.skin, 22) + '" opacity=".55"/>';
+    // beard sits under the mouth
+    var hf = 'fill="url(#' + id + 'hr)"';
+    if (o.beard === 'full') s += '<path ' + hf + ' d="M-54 -4C-55 30 -36 63 0 65C36 63 55 30 54 -4L48 -4C47 18 36 27 24 27C14 27 8 25 0 25C-8 25 -14 27 -24 27C-36 27 -47 18 -48 -4Z"/>';
+    else if (o.beard === 'stubble') s += '<path fill="' + o.hairColor + '" opacity=".22" d="M-53 -2C-54 30 -36 60 0 61C36 60 54 30 53 -2L47 -2C46 18 36 27 24 27C14 27 8 25 0 25C-8 25 -14 27 -24 27C-36 27 -46 18 -47 -2Z"/>';
+    else if (o.beard === 'goatee') s += '<path ' + hf + ' d="M-13 41Q0 37 13 41Q13 56 0 60Q-13 56 -13 41Z"/>';
+    // mouth
+    var my = kid ? 37 : 36, lip = o.lips || '';
+    if (state === 'on') {
+      var mp = 'M-14 ' + (my - 4) + 'Q-12 ' + (my + 8) + ' 0 ' + (my + 8) + 'Q12 ' + (my + 8) + ' 14 ' + (my - 4) + 'Q0 ' + (my - 1) + ' -14 ' + (my - 4) + 'Z', lc = lip || shade(o.skin, -28);
+      s += '<clipPath id="' + id + 'm"><path d="' + mp + '"/></clipPath>' +
+        '<path d="' + mp + '" fill="#6a2028" stroke="' + lc + '" stroke-width="2.2" stroke-linejoin="round"/>' +
+        '<g clip-path="url(#' + id + 'm)"><rect x="-14" y="' + (my - 5) + '" width="28" height="5.5" rx="2" fill="#fff"/><ellipse cx="0" cy="' + (my + 7) + '" rx="7" ry="4" fill="#e0697b"/></g>' +
+        '<path d="M-7 ' + (my + 11) + 'Q0 ' + (my + 13.5) + ' 7 ' + (my + 11) + '" stroke="' + lc + '" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".6"/>' +
+        '<path d="M-17 ' + (my - 6) + 'q-2 2 0 4M17 ' + (my - 6) + 'q2 2 0 4" stroke="' + shade(o.skin, -30) + '" stroke-width="1.4" fill="none" opacity=".55" stroke-linecap="round"/>';
+    } else if (state === 'wait') {
+      s += '<ellipse cx="2" cy="' + (my + 1) + '" rx="4.6" ry="5.2" fill="#5a1720"' + (lip ? ' stroke="' + lip + '" stroke-width="2.2"' : '') + '/>';
+    } else {
+      s += '<path d="M-6 ' + (my + 1) + 'Q0 ' + (my + 4) + ' 6 ' + (my + 1) + '" stroke="' + (lip || '#7a3a36') + '" stroke-width="' + (lip ? 3 : 2.4) + '" fill="none" stroke-linecap="round"/>' +
+        '<g class="av-bubble" style="transform-origin:9px 26px"><circle cx="13" cy="24" r="7" fill="#bfe6ff" fill-opacity=".45" stroke="#e8f6ff" stroke-width="1"/><circle cx="10.5" cy="21.5" r="1.8" fill="#fff" opacity=".9"/></g>';
+    }
+    if (o.beard === 'mustache' || o.beard === 'goatee' || o.beard === 'full')
+      s += '<path ' + hf + ' d="M-17 ' + (my - 5) + 'Q-9 ' + (my - 14) + ' 0 ' + (my - 9) + 'Q9 ' + (my - 14) + ' 17 ' + (my - 5) + 'Q9 ' + (my - 7) + ' 0 ' + (my - 6) + 'Q-9 ' + (my - 7) + ' -17 ' + (my - 5) + 'Z"/>';
+    return s;
+  }
+
+  // ---------- head group (local coords: head centre 0,0) ----------
+  function headParts(o, id, state) {
+    var kid = o.age === 'kid', sk = 'url(#' + id + 'sk)', hp = kid ? KIDHEAD : HEAD[o.face], s = '';
+    var cover = COVER_HAT[o.hat];
+    // ears
+    [-1, 1].forEach(function (d) {
+      s += '<ellipse cx="' + d * 51 + '" cy="8" rx="9" ry="12.5" fill="' + sk + '"/><path d="M' + d * 49 + ' 2Q' + d * 55 + ' 8 ' + d * 50 + ' 15" stroke="' + shade(o.skin, -22) + '" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+      if (o.earrings) s += '<circle cx="' + d * 52 + '" cy="23" r="3.6" fill="url(#' + id + 'gd)"/>';
+    });
+    s += '<path d="' + hp + '" fill="' + sk + '"/>';
+    // jaw shade and forehead shine give the 3D look
+    s += '<path d="' + hp + '" fill="url(#' + id + 'jw)"/>';
+    s += '<ellipse cx="-12" cy="-36" rx="' + (o.hair === 'bald' ? 22 : 18) + '" ry="10" fill="url(#' + id + 'gl)"/>';
+    s += face(o, id, state, kid);
+    s += glasses(o, AGE[o.age].e);
+    var hf = hairFront(o, id + 'hr', kid);
+    if (cover && hf) hf = '<g clip-path="url(#' + id + 'hc)">' + hf + '</g>';
+    s += hf + hat(o, id);
+    return s;
+  }
+
+  function defs(o, id) {
+    var sk = o.skin, hc = o.hairColor, tc = o.topColor, ck = lum(sk) < .45 ? '#c2405a' : '#ff6f86';
+    return '<defs>' +
+      '<radialGradient id="' + id + 'sk" cx="40%" cy="32%" r="78%"><stop offset="0" stop-color="' + shade(sk, 16) + '"/><stop offset=".55" stop-color="' + sk + '"/><stop offset="1" stop-color="' + shade(sk, -20) + '"/></radialGradient>' +
+      '<linearGradient id="' + id + 'jw" x1="0" y1="0" x2="0" y2="1"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#4a1d10" stop-opacity=".16"/></linearGradient>' +
+      '<radialGradient id="' + id + 'gl"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="' + id + 'ck"><stop offset="0" stop-color="' + ck + '" stop-opacity=".55"/><stop offset="1" stop-color="' + ck + '" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="' + id + 'sc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2dad6"/><stop offset=".45" stop-color="#fff"/></linearGradient>' +
+      '<radialGradient id="' + id + 'ir" cx="45%" cy="40%" r="60%"><stop offset="0" stop-color="' + shade(o.eyeColor, 40) + '"/><stop offset=".55" stop-color="' + o.eyeColor + '"/><stop offset="1" stop-color="' + shade(o.eyeColor, -45) + '"/></radialGradient>' +
+      '<radialGradient id="' + id + 'hr" cx="38%" cy="18%" r="85%"><stop offset="0" stop-color="' + shade(hc, 26) + '"/><stop offset=".5" stop-color="' + hc + '"/><stop offset="1" stop-color="' + shade(hc, -30) + '"/></radialGradient>' +
+      '<radialGradient id="' + id + 'tp" cx="34%" cy="12%" r="95%"><stop offset="0" stop-color="' + shade(tc, 18) + '"/><stop offset=".5" stop-color="' + tc + '"/><stop offset="1" stop-color="' + shade(tc, -26) + '"/></radialGradient>' +
+      '<radialGradient id="' + id + 'ht" cx="36%" cy="20%" r="85%"><stop offset="0" stop-color="' + shade(o.hatColor, 22) + '"/><stop offset=".55" stop-color="' + o.hatColor + '"/><stop offset="1" stop-color="' + shade(o.hatColor, -25) + '"/></radialGradient>' +
+      '<linearGradient id="' + id + 'bt" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="' + shade(o.bottomColor, -18) + '"/><stop offset=".4" stop-color="' + shade(o.bottomColor, 8) + '"/><stop offset="1" stop-color="' + shade(o.bottomColor, -22) + '"/></linearGradient>' +
+      '<linearGradient id="' + id + 'gd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".5" stop-color="#f2c14e"/><stop offset="1" stop-color="#b8861f"/></linearGradient>' +
+      '<radialGradient id="' + id + 'sh"><stop offset="0" stop-color="#000" stop-opacity=".45"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>' +
+      '<clipPath id="' + id + 'hc"><rect x="-90" y="-24" width="180" height="200"/></clipPath>' +
+      '</defs>';
+  }
+
+  // collar and chest details on top of the torso; cx centre, T torso top, B bottom, S shoulder half width
+  function topDetails(o, id, cx, T, B, S, W, bust) {
+    var c = o.topColor, d = shade(c, -24), l = shade(c, 24), s = '', mid = (T + B) / 2, light = lum(c) > .75;
+    var line = function (dd, w, cc, op) { return '<path d="' + dd + '" stroke="' + (cc || d) + '" stroke-width="' + (w || 2) + '" fill="none" stroke-linecap="round"' + (op ? ' opacity="' + op + '"' : '') + '/>'; };
+    switch (o.top) {
+      case 'tee':
+        s += line('M' + (cx - 13) + ' ' + (T + 1) + 'Q' + cx + ' ' + (T + 10) + ' ' + (cx + 13) + ' ' + (T + 1), 3);
+        s += '<path transform="translate(' + cx + ' ' + n1(mid + 2) + ')" d="M0 -9C3 -15 12 -13 10 -5C9 0 3 4 0 8C-3 4 -9 0 -10 -5C-12 -13 -3 -15 0 -9Z" fill="' + (light ? '#e3262f' : '#fff') + '" opacity=".9"/>';
+        break;
+      case 'hoodie':
+        s += line('M' + (cx - 6) + ' ' + (T + 7) + 'L' + (cx - 7) + ' ' + (T + 24) + 'M' + (cx + 6) + ' ' + (T + 7) + 'L' + (cx + 7) + ' ' + (T + 24), 2, light ? '#999' : '#fff', .85);
+        if (!bust) s += '<path d="M' + n1(cx - W * .78) + ' ' + n1(B - 4) + 'L' + n1(cx - W * .6) + ' ' + n1(mid + 4) + 'L' + n1(cx + W * .6) + ' ' + n1(mid + 4) + 'L' + n1(cx + W * .78) + ' ' + n1(B - 4) + '" fill="' + shade(c, -8) + '" stroke="' + d + '" stroke-width="1.6"/>';
+        break;
+      case 'sweater':
+        var zz = '';
+        for (var x = cx - S + 4; x < cx + S - 6; x += 8) zz += 'L' + n1(x + 4) + ' ' + n1(mid - 6) + 'L' + n1(x + 8) + ' ' + n1(mid);
+        s += '<rect x="' + (cx - S + 1) + '" y="' + n1(mid - 10) + '" width="' + (2 * S - 2) + '" height="14" fill="' + (light ? '#e3262f' : '#fff') + '" opacity=".22"/>';
+        s += '<path d="M' + (cx - S + 4) + ' ' + mid + zz + '" stroke="' + (light ? '#e3262f' : '#fff') + '" stroke-width="2.4" fill="none" opacity=".85"/>';
+        s += line('M' + (cx - 13) + ' ' + (T + 1) + 'Q' + cx + ' ' + (T + 11) + ' ' + (cx + 13) + ' ' + (T + 1), 5);
+        break;
+      case 'jacket':
+        s += '<path d="M' + (cx - 11) + ' ' + T + 'L' + cx + ' ' + (T + 14) + 'L' + (cx + 11) + ' ' + T + 'L' + (cx + 6) + ' ' + (B - 2) + 'L' + (cx - 6) + ' ' + (B - 2) + 'Z" fill="' + (light ? '#2a2a30' : '#f4f1ec') + '"/>';
+        s += line('M' + (cx - 6) + ' ' + (T + 8) + 'L' + (cx - 6) + ' ' + (B - 2) + 'M' + (cx + 6) + ' ' + (T + 8) + 'L' + (cx + 6) + ' ' + (B - 2), 2.4, d);
+        s += line('M' + (cx - 14) + ' ' + (T + 1) + 'Q' + cx + ' ' + (T + 8) + ' ' + (cx + 14) + ' ' + (T + 1), 5, d);
+        if (!bust) s += '<rect x="' + (cx - W - 1) + '" y="' + (B - 7) + '" width="' + (2 * W + 2) + '" height="7" rx="3" fill="' + d + '"/>';
+        break;
+      case 'sport':
+        s += line('M' + cx + ' ' + (T + 6) + 'L' + cx + ' ' + (B - 1), 2.2, light ? '#888' : '#fff', .9);
+        s += '<path d="M' + (cx - 12) + ' ' + (T - 3) + 'L' + (cx + 12) + ' ' + (T - 3) + 'L' + (cx + 13) + ' ' + (T + 4) + 'L' + (cx - 13) + ' ' + (T + 4) + 'Z" fill="' + d + '"/>';
+        s += line('M' + (cx - S + 7) + ' ' + (T + 4) + 'L' + (cx - W + 1) + ' ' + (B - 3) + 'M' + (cx + S - 7) + ' ' + (T + 4) + 'L' + (cx + W - 1) + ' ' + (B - 3), 2.6, light ? '#e3262f' : '#fff', .9);
+        break;
+      case 'overalls':
+        var bc = o.bottomColor;
+        s += line('M' + (cx - 13) + ' ' + (T + 1) + 'Q' + cx + ' ' + (T + 9) + ' ' + (cx + 13) + ' ' + (T + 1), 3);
+        s += '<path d="M' + n1(cx - W * .72) + ' ' + n1(mid - 4) + 'L' + n1(cx + W * .72) + ' ' + n1(mid - 4) + 'L' + n1(cx + W + 1) + ' ' + (B + 1) + 'L' + n1(cx - W - 1) + ' ' + (B + 1) + 'Z" fill="url(#' + id + 'bt)"/>';
+        s += line('M' + n1(cx - W * .62) + ' ' + n1(mid - 3) + 'L' + n1(cx - S + 9) + ' ' + T + 'M' + n1(cx + W * .62) + ' ' + n1(mid - 3) + 'L' + n1(cx + S - 9) + ' ' + T, 5, bc);
+        s += '<circle cx="' + n1(cx - W * .6) + '" cy="' + n1(mid - 1) + '" r="2.4" fill="#f2c14e"/><circle cx="' + n1(cx + W * .6) + '" cy="' + n1(mid - 1) + '" r="2.4" fill="#f2c14e"/>';
+        s += '<rect x="' + n1(cx - 8) + '" y="' + n1(mid + 3) + '" width="16" height="10" rx="2" fill="none" stroke="' + shade(bc, -25) + '" stroke-width="1.5"/>';
+        break;
+      case 'dress':
+        s += line('M' + (cx - 14) + ' ' + (T + 1) + 'Q' + cx + ' ' + (T + 13) + ' ' + (cx + 14) + ' ' + (T + 1), 2.4);
+        if (!bust) s += '<rect x="' + (cx - W) + '" y="' + n1(mid + 4) + '" width="' + (2 * W) + '" height="5" rx="2.5" fill="' + d + '"/>';
+        break;
+      case 'puffer':
+        for (var y = T + 14; y < B - 4; y += 12) s += line('M' + (cx - S + 2) + ' ' + y + 'Q' + cx + ' ' + (y + 4) + ' ' + (cx + S - 2) + ' ' + y, 1.8, d, .8);
+        s += line('M' + cx + ' ' + (T + 4) + 'L' + cx + ' ' + (B - 1), 2, d);
+        s += '<rect x="' + (cx - 16) + '" y="' + (T - 8) + '" width="32" height="14" rx="7" fill="' + l + '" stroke="' + d + '" stroke-width="1.4"/>';
+        break;
+      case 'suit':
+        var tie = o.hatColor === o.topColor ? '#e3262f' : o.hatColor;
+        s += '<path d="M' + (cx - 13) + ' ' + T + 'L' + cx + ' ' + (T + 30) + 'L' + (cx + 13) + ' ' + T + 'Z" fill="#f6f4f0"/>';
+        s += '<path d="M' + cx + ' ' + (T + 5) + 'L' + (cx - 4) + ' ' + (T + 9) + 'L' + (cx - 2) + ' ' + (T + 26) + 'L' + cx + ' ' + (T + 30) + 'L' + (cx + 2) + ' ' + (T + 26) + 'L' + (cx + 4) + ' ' + (T + 9) + 'Z" fill="' + tie + '"/>';
+        s += '<path d="M' + (cx - 14) + ' ' + T + 'L' + (cx - 2) + ' ' + (T + 32) + 'L' + (cx - 12) + ' ' + (T + 18) + 'L' + (cx - 20) + ' ' + (T + 4) + 'Z M' + (cx + 14) + ' ' + T + 'L' + (cx + 2) + ' ' + (T + 32) + 'L' + (cx + 12) + ' ' + (T + 18) + 'L' + (cx + 20) + ' ' + (T + 4) + 'Z" fill="' + d + '"/>';
+        if (!bust) s += '<circle cx="' + cx + '" cy="' + (T + 40) + '" r="2.2" fill="' + d + '"/><circle cx="' + cx + '" cy="' + (T + 50) + '" r="2.2" fill="' + d + '"/>';
+        break;
+    }
+    return s;
+  }
+
+  // a limb as thick round strokes: shoulder -> elbow -> hand
+  function arm(pts, w, sleeve, skin, long, id) {
+    var d = 'M' + pts.map(function (p) { return n1(p[0]) + ' ' + n1(p[1]); }).join('L'), h = pts[pts.length - 1], s = '';
+    if (long) s += '<path d="' + d + '" stroke="' + sleeve + '" stroke-width="' + w + '" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+    else {
+      s += '<path d="' + d + '" stroke="' + shade(skin, -6) + '" stroke-width="' + n1(w * .82) + '" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+      var e = pts[1], m = [pts[0][0] + (e[0] - pts[0][0]) * .55, pts[0][1] + (e[1] - pts[0][1]) * .55];
+      s += '<path d="M' + n1(pts[0][0]) + ' ' + n1(pts[0][1]) + 'L' + n1(m[0]) + ' ' + n1(m[1]) + '" stroke="' + sleeve + '" stroke-width="' + n1(w + 2) + '" fill="none" stroke-linecap="round"/>';
+    }
+    s += '<circle cx="' + n1(h[0]) + '" cy="' + n1(h[1]) + '" r="' + n1(w * .62) + '" fill="url(#' + id + 'sk)"/>';
+    return s;
+  }
+
+  function extraBack(o, id, cx, T, B, S, ground) {
+    if (o.extra === 'cape') {
+      var cb = ground - 16, cm = n1((T + cb) / 2), cc = o.topColor === '#e3262f' || o.topColor === '#ff7ab6' ? '#f2c14e' : '#c81d2a';
+      return '<g class="av-cape" style="transform-origin:' + cx + 'px ' + T + 'px"><path d="M' + n1(cx - S + 6) + ' ' + (T + 2) + 'Q' + n1(cx - S - 12) + ' ' + cm + ' ' + n1(cx - S - 16) + ' ' + cb + 'Q' + cx + ' ' + (cb + 8) + ' ' + n1(cx + S + 16) + ' ' + cb + 'Q' + n1(cx + S + 12) + ' ' + cm + ' ' + n1(cx + S - 6) + ' ' + (T + 2) + 'Z" fill="' + cc + '"/>' +
+        '<path d="M' + n1(cx - S + 2) + ' ' + (T + 8) + 'Q' + n1(cx - S - 10) + ' ' + cm + ' ' + n1(cx - S - 12) + ' ' + (cb - 4) + '" stroke="#fff" stroke-width="3" fill="none" opacity=".18"/></g>';
+    }
+    if (o.extra === 'wings') {
+      var w = function (dir) {
+        var x0 = cx + dir * (S - 8), y0 = T + 16;
+        return '<path d="M' + x0 + ' ' + y0 + 'C' + (x0 + dir * 40) + ' ' + (y0 - 46) + ' ' + (x0 + dir * 78) + ' ' + (y0 - 30) + ' ' + (x0 + dir * 74) + ' ' + (y0 - 4) + 'C' + (x0 + dir * 70) + ' ' + (y0 + 8) + ' ' + (x0 + dir * 60) + ' ' + (y0 + 4) + ' ' + (x0 + dir * 56) + ' ' + (y0 + 14) + 'C' + (x0 + dir * 50) + ' ' + (y0 + 26) + ' ' + (x0 + dir * 38) + ' ' + (y0 + 20) + ' ' + (x0 + dir * 32) + ' ' + (y0 + 30) + 'C' + (x0 + dir * 22) + ' ' + (y0 + 40) + ' ' + (x0 + dir * 8) + ' ' + (y0 + 30) + ' ' + x0 + ' ' + (y0 + 20) + 'Z" fill="url(#' + id + 'wg)" stroke="#fff" stroke-width="1.5" stroke-opacity=".6"/>';
+      };
+      return '<defs><linearGradient id="' + id + 'wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ffd1dc"/></linearGradient></defs>' +
+        '<g class="av-wingl" style="transform-origin:' + (cx - S + 8) + 'px ' + (T + 16) + 'px">' + w(-1) + '</g><g class="av-wingr" style="transform-origin:' + (cx + S - 8) + 'px ' + (T + 16) + 'px">' + w(1) + '</g>';
+    }
+    if (o.extra === 'backpack') return '<rect x="' + (cx - S - 6) + '" y="' + (T + 12) + '" width="' + (2 * S + 12) + '" height="' + n1((B - T) * .78) + '" rx="12" fill="' + shade(o.hatColor, -10) + '"/>';
+    return '';
+  }
+
+  function fx(state, cx, top) {
+    if (state === 'off') return '<g class="av-zz" font-family="Arial Black,Arial,sans-serif" font-weight="900" fill="#cfd6ff">' +
+      '<text class="av-z" x="' + (cx + 46) + '" y="' + (top + 14) + '" font-size="15">z</text><text class="av-z av-z2" x="' + (cx + 58) + '" y="' + (top + 2) + '" font-size="19">z</text><text class="av-z av-z3" x="' + (cx + 72) + '" y="' + (top - 12) + '" font-size="24">Z</text></g>';
+    if (state === 'wait') { var bx = cx + 44, by = top + 2;
+      return '<g><path d="M' + bx + ' ' + (by + 26) + 'l-6 8l14 -6Z" fill="#fff"/><rect x="' + bx + '" y="' + by + '" width="48" height="28" rx="14" fill="#fff"/><g fill="#e3262f"><circle class="av-dot" cx="' + (bx + 12) + '" cy="' + (by + 14) + '" r="4"/><circle class="av-dot av-dot2" cx="' + (bx + 24) + '" cy="' + (by + 14) + '" r="4"/><circle class="av-dot av-dot3" cx="' + (bx + 36) + '" cy="' + (by + 14) + '" r="4"/></g></g>'; }
+    var star = function (x, y, r, k) { return '<path class="av-sp' + k + '" style="transform-origin:' + x + 'px ' + y + 'px" d="M' + x + ' ' + (y - r) + 'Q' + x + ' ' + y + ' ' + (x + r) + ' ' + y + 'Q' + x + ' ' + y + ' ' + x + ' ' + (y + r) + 'Q' + x + ' ' + y + ' ' + (x - r) + ' ' + y + 'Q' + x + ' ' + y + ' ' + x + ' ' + (y - r) + 'Z" fill="#ffe27a"/>'; };
+    return star(cx - 62, top + 18, 9, 1) + star(cx + 64, top + 4, 11, 2) + star(cx + 50, top + 58, 6, 3);
+  }
+
+  // ---------- the avatar ----------
+  function avatarSVG(o, opt) {
+    o = avNormalize(o); opt = opt || {};
+    var mode = opt.mode === 'head' ? 'head' : 'body', state = opt.state === 'on' || opt.state === 'wait' ? opt.state : 'off';
+    var id = 'av' + (++seq) + 'x', a = AGE[o.age], b = BUILD[o.build], tc = o.topColor, long = LONG_SLEEVE[o.top], s = '';
+    var cls = 'av s-' + state + ' m-' + mode + (opt.still ? ' still' : '') + (opt.cls ? ' ' + opt.cls : '');
+    if (mode === 'head') {
+      // bust: head with neck and shoulders, viewBox 200x200
+      var hx = 100, hy = 88, T = 160, S = 66, sk = 'url(#' + id + 'sk)';
+      s += '<g class="av-up">';
+      s += '<g transform="translate(' + hx + ' ' + hy + ')"><g class="av-head" style="transform-origin:0px 60px">' + hairBack(o, id + 'hr') + '</g></g>';
+      if (o.top === 'hoodie') s += '<path d="M' + (hx - 34) + ' ' + (T + 6) + 'Q' + hx + ' ' + (T + 34) + ' ' + (hx + 34) + ' ' + (T + 6) + 'Q' + (hx + 30) + ' ' + (T - 16) + ' ' + hx + ' ' + (T - 16) + 'Q' + (hx - 30) + ' ' + (T - 16) + ' ' + (hx - 34) + ' ' + (T + 6) + 'Z" fill="' + shade(tc, -16) + '"/>';
+      s += '<rect x="' + (hx - 15) + '" y="' + (T - 30) + '" width="30" height="40" rx="12" fill="' + shade(o.skin, -12) + '"/><ellipse cx="' + hx + '" cy="' + (T - 22) + '" rx="16" ry="8" fill="#000" opacity=".12"/>';
+      s += '<path d="M' + (hx - S + 18) + ' ' + T + 'C' + (hx - S + 2) + ' ' + T + ' ' + (hx - S - 8) + ' ' + (T + 14) + ' ' + (hx - S - 10) + ' 206L' + (hx + S + 10) + ' 206C' + (hx + S + 8) + ' ' + (T + 14) + ' ' + (hx + S - 2) + ' ' + T + ' ' + (hx + S - 18) + ' ' + T + 'Z" fill="url(#' + id + 'tp)"/>';
+      s += topDetails(o, id, hx, T, 206, S - 6, S - 12, true);
+      s += '<g transform="translate(' + hx + ' ' + hy + ')"><g class="av-head" style="transform-origin:0px 60px">' + headParts(o, id, state) + '</g></g>';
+      s += '</g>' + (opt.fx === false ? '' : fx(state, hx, 24));
+      return '<svg class="' + cls + '" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">' + defs(o, id) + s + '</svg>';
+    }
+    // full body, viewBox 200x300, feet on y=292
+    var cx = 100, g = 292, hip = g - a.legs, T2 = hip - a.torso, Sh = a.sh * b, W = a.hip * b, k = a.k, hy2 = T2 - 8 - 57 * k;
+    var lw = W * .96, lx = W * .48, legTop = hip - 6, aw = a.arm * (b > 1 ? 1.12 : b < 1 ? .92 : 1);
+    var pantsEnd = o.bottom === 'shorts' ? hip + a.legs * .42 : o.bottom === 'skirt' || o.top === 'dress' ? hip : g - 8;
+    var dress = o.top === 'dress';
+    s += '<ellipse class="av-shadow" style="transform-origin:' + cx + 'px ' + g + 'px" cx="' + cx + '" cy="' + (g + 1) + '" rx="' + n1(W + 26) + '" ry="7" fill="url(#' + id + 'sh)"/>';
+    s += '<g class="av-hop" style="transform-origin:' + cx + 'px ' + g + 'px">';
+    if (o.extra !== 'none') s += '<g class="av-up">' + extraBack(o, id, cx, T2, hip, Sh, g) + '</g>';
+    // legs: skin first, then trousers over them, then shoes
+    var legs = '', sole = o.shoes === 'boots' ? shade(o.shoeColor, -35) : '#f4f4f4';
+    [-1, 1].forEach(function (d) {
+      var x = cx + d * lx;
+      legs += '<rect x="' + n1(x - lw * .36) + '" y="' + legTop + '" width="' + n1(lw * .72) + '" height="' + (g - 6 - legTop) + '" rx="' + n1(lw * .36) + '" fill="' + shade(o.skin, -8) + '"/>';
+      if (pantsEnd > hip) legs += '<rect x="' + n1(x - lw / 2) + '" y="' + legTop + '" width="' + n1(lw) + '" height="' + n1(pantsEnd - legTop) + '" rx="' + n1(lw * .42) + '" fill="url(#' + id + 'bt)"/>';
+      if (o.bottom === 'jeans' && pantsEnd > hip) legs += '<path d="M' + n1(x + d * lw * .18) + ' ' + (legTop + 10) + 'L' + n1(x + d * lw * .2) + ' ' + n1(pantsEnd - 6) + '" stroke="' + shade(o.bottomColor, 28) + '" stroke-width="1.3" stroke-dasharray="3 2" opacity=".7"/>';
+      if (o.bottom === 'joggers' && pantsEnd > hip) legs += '<rect x="' + n1(x - lw / 2 + 1) + '" y="' + n1(pantsEnd - 8) + '" width="' + n1(lw - 2) + '" height="8" rx="4" fill="' + shade(o.bottomColor, -22) + '"/>';
+      var sw = lw + 8, sh = o.shoes === 'boots' ? 22 : o.shoes === 'high' ? 17 : 13;
+      legs += '<rect x="' + n1(x - sw / 2 + d * 2) + '" y="' + (g - sh) + '" width="' + n1(sw) + '" height="' + sh + '" rx="' + n1(Math.min(sh, sw) * .48) + '" fill="' + o.shoeColor + '" stroke="' + shade(o.shoeColor, -30) + '" stroke-width="1"/>' +
+        '<rect x="' + n1(x - sw / 2 + d * 2) + '" y="' + (g - 4.5) + '" width="' + n1(sw) + '" height="4.5" rx="2.2" fill="' + sole + '"/>';
+      if (o.shoes !== 'boots') legs += '<path d="M' + n1(x - sw / 2 + d * 2 + 3) + ' ' + (g - 6) + 'Q' + n1(x + d * 2) + ' ' + (g - 7) + ' ' + n1(x + sw / 2 + d * 2 - 3) + ' ' + (g - sh + 4) + '" stroke="' + (lum(o.shoeColor) > .7 ? '#e3262f' : '#fff') + '" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".85"/>';
+    });
+    if (pantsEnd > hip) legs += '<rect x="' + n1(cx - W) + '" y="' + (hip - 8) + '" width="' + n1(2 * W) + '" height="22" rx="8" fill="url(#' + id + 'bt)"/>';
+    if (o.bottom === 'skirt' && !dress) legs += '<path d="M' + n1(cx - W - 1) + ' ' + (hip - 8) + 'L' + n1(cx + W + 1) + ' ' + (hip - 8) + 'L' + n1(cx + W * 1.55) + ' ' + n1(hip + a.legs * .46) + 'Q' + cx + ' ' + n1(hip + a.legs * .55) + ' ' + n1(cx - W * 1.55) + ' ' + n1(hip + a.legs * .46) + 'Z" fill="url(#' + id + 'bt)"/>';
+    s += '<g class="av-legs">' + legs + '</g>';
+    s += '<g class="av-up">';
+    s += '<g transform="translate(' + cx + ' ' + n1(hy2) + ') scale(' + k + ')"><g class="av-head" style="transform-origin:0px 62px">' + hairBack(o, id + 'hr') + '</g></g>';
+    // arms behind/beside torso; poses per state
+    var sy = T2 + 9, sxL = cx - Sh + 6, sxR = cx + Sh - 6, U = a.up, L = a.lo, sleeve = shade(tc, -8), armL, armR;
+    if (state === 'on') {
+      armL = [[sxL, sy], [sxL - U * .55, sy + U * .8], [sxL - U * .3, sy + U * .8 + L * .9]];
+      armR = [[sxR, sy], [sxR + U * .78, sy - U * .45], [sxR + U * .78 + L * .25, sy - U * .45 - L * .95]];
+    } else if (state === 'wait') {
+      armL = [[sxL, sy], [sxL - U * .5, sy + U * .85], [sxL - U * .55, sy + U * .85 + L * .9]];
+      armR = [[sxR, sy], [sxR + U * .5, sy + U * .85], [sxR + U * .55, sy + U * .85 + L * .9]];
+    } else {
+      armL = [[sxL, sy], [sxL - U * .18, sy + U], [sxL - U * .08, sy + U + L]];
+      armR = [[sxR, sy], [sxR + U * .18, sy + U], [sxR + U * .08, sy + U + L]];
+    }
+    var wave = '<g class="av-wave" style="transform-origin:' + n1(sxR) + 'px ' + n1(sy) + 'px">' + arm(armR, aw, sleeve, o.skin, long, id) + '</g>';
+    var left = '<g class="av-arml" style="transform-origin:' + n1(sxL) + 'px ' + n1(sy) + 'px">' + arm(armL, aw, sleeve, o.skin, long, id) + '</g>';
+    // neck and torso
+    if (o.top === 'hoodie') s += '<path d="M' + (cx - 26) + ' ' + (T2 + 4) + 'Q' + cx + ' ' + (T2 + 26) + ' ' + (cx + 26) + ' ' + (T2 + 4) + 'Q' + (cx + 22) + ' ' + (T2 - 12) + ' ' + cx + ' ' + (T2 - 12) + 'Q' + (cx - 22) + ' ' + (T2 - 12) + ' ' + (cx - 26) + ' ' + (T2 + 4) + 'Z" fill="' + shade(tc, -16) + '"/>';
+    s += '<rect x="' + n1(cx - 10 * k) + '" y="' + (T2 - 18) + '" width="' + n1(20 * k) + '" height="26" rx="8" fill="' + shade(o.skin, -12) + '"/>';
+    s += left;
+    var tB = dress ? hip + 2 : hip + 4;
+    s += '<path d="M' + n1(cx - Sh + 9) + ' ' + T2 + 'C' + n1(cx - Sh + 2) + ' ' + T2 + ' ' + n1(cx - Sh) + ' ' + (T2 + 5) + ' ' + n1(cx - Sh) + ' ' + (T2 + 14) +
+      'L' + n1(cx - W - 1) + ' ' + (tB - 8) + 'Q' + n1(cx - W - 1) + ' ' + tB + ' ' + n1(cx - W + 7) + ' ' + tB + 'L' + n1(cx + W - 7) + ' ' + tB + 'Q' + n1(cx + W + 1) + ' ' + tB + ' ' + n1(cx + W + 1) + ' ' + (tB - 8) +
+      'L' + n1(cx + Sh) + ' ' + (T2 + 14) + 'C' + n1(cx + Sh) + ' ' + (T2 + 5) + ' ' + n1(cx + Sh - 2) + ' ' + T2 + ' ' + n1(cx + Sh - 9) + ' ' + T2 + 'Z" fill="url(#' + id + 'tp)"/>';
+    if (dress) s += '<path d="M' + n1(cx - W) + ' ' + (hip - 12) + 'L' + n1(cx + W) + ' ' + (hip - 12) + 'L' + n1(cx + W * 1.7) + ' ' + n1(hip + a.legs * .5) + 'Q' + cx + ' ' + n1(hip + a.legs * .6) + ' ' + n1(cx - W * 1.7) + ' ' + n1(hip + a.legs * .5) + 'Z" fill="url(#' + id + 'tp)"/>' +
+      '<path d="M' + n1(cx - W * 1.6) + ' ' + n1(hip + a.legs * .47) + 'Q' + cx + ' ' + n1(hip + a.legs * .57) + ' ' + n1(cx + W * 1.6) + ' ' + n1(hip + a.legs * .47) + '" stroke="#fff" stroke-width="2" fill="none" opacity=".5"/>';
+    s += topDetails(o, id, cx, T2, tB, Sh, W, false);
+    if (o.extra === 'backpack') s += '<path d="M' + n1(cx - Sh + 10) + ' ' + T2 + 'L' + n1(cx - W + 4) + ' ' + (hip - 6) + 'M' + n1(cx + Sh - 10) + ' ' + T2 + 'L' + n1(cx + W - 4) + ' ' + (hip - 6) + '" stroke="' + shade(o.hatColor, -30) + '" stroke-width="5" stroke-linecap="round"/>';
+    s += wave;
+    s += '<g transform="translate(' + cx + ' ' + n1(hy2) + ') scale(' + k + ')"><g class="av-head" style="transform-origin:0px 62px">' + headParts(o, id, state) + '</g></g>';
+    s += '</g></g>';
+    if (opt.fx !== false) s += fx(state, cx, Math.max(14, hy2 - 66 * k));
+    return '<svg class="' + cls + '" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">' + defs(o, id) + s + '</svg>';
+  }
+
+  // ---------- the scene: hero on the button platform, friends beside ----------
+  // friends: array of avatar objects (up to 4). opt.pop = index of the friend that just arrived (pops in).
+  function avatarScene(me, friends, opt) {
+    opt = opt || {}; friends = (friends || []).slice(0, 4);
+    var mode = opt.mode === 'head' ? 'head' : 'body', state = opt.state || 'off', n = friends.length, s = '', fs = opt.friendState || (state === 'wait' ? 'on' : state);
+    var inner = function (svg, x, y, w, h) { return svg.replace('<svg ', '<svg x="' + n1(x) + '" y="' + n1(y) + '" width="' + n1(w) + '" height="' + n1(h) + '" '); };
+    var slots = [1, -1, 2, -2];
+    if (mode === 'body') {
+      var W = 220 + (n > 0 ? 200 : 0) + (n > 2 ? 160 : 0), cx = W / 2, H = 300;
+      s += '<ellipse class="av-plat" cx="' + cx + '" cy="284" rx="86" ry="15" fill="url(#avpl' + state + ')"/>' +
+        '<ellipse class="av-ring" cx="' + cx + '" cy="284" rx="86" ry="15" fill="none" stroke-width="3"/>' +
+        '<g transform="translate(' + (cx + 58) + ' 287) scale(1 .5)" fill="none" stroke="' + (state === 'on' ? '#fff' : '#8a8a94') + '" stroke-width="2.6" stroke-linecap="round" opacity=".9"><path d="M0 -9V-1"/><path d="M-6 -6A8.5 8.5 0 1 0 6 -6"/></g>';
+      friends.forEach(function (f, i) {
+        var d = slots[i], fx2 = cx + (Math.abs(d) === 1 ? 104 : 184) * Math.sign(d), sc = .8, w = 200 * sc, h = 300 * sc;
+        s += '<g class="av-friend' + (opt.pop === i ? ' av-pop' : '') + '" style="transform-origin:' + n1(fx2) + 'px 282px;animation-delay:' + (i * .17) + 's">' +
+          inner(avatarSVG(f, { mode: 'body', state: fs }), fx2 - w / 2, 282 - h * 292 / 300, w, h) + '</g>';
+      });
+      s += inner(avatarSVG(me, { mode: 'body', state: state }), cx - 100, -14, 200, 300);
+      return '<svg class="avscene s-' + state + '" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">' + plat() + s + '</svg>';
+    }
+    var W2 = 204 + (n > 0 ? 220 : 0) + (n > 2 ? 200 : 0), c2 = W2 / 2, sid = 'avs' + (++seq);
+    friends.forEach(function (f, i) {
+      var d = slots[i], x = n1(c2 + (Math.abs(d) === 1 ? 154 : 254) * Math.sign(d)), r = 46, y = 132;
+      s += '<g class="av-friend' + (opt.pop === i ? ' av-pop' : '') + '" style="transform-origin:' + x + 'px ' + y + 'px">' +
+        '<clipPath id="' + sid + 'f' + i + '"><circle cx="' + x + '" cy="' + y + '" r="' + r + '"/></clipPath>' +
+        '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="url(#avpcon)"/>' +
+        '<g clip-path="url(#' + sid + 'f' + i + ')">' + inner(avatarSVG(f, { mode: 'head', state: fs }), x - r * 1.08, y - r * 1.02, r * 2.16, r * 2.16) + '</g>' +
+        '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" stroke="#ff4b55" stroke-opacity=".55" stroke-width="2.5"/></g>';
+    });
+    s += '<clipPath id="' + sid + 'm"><circle cx="' + c2 + '" cy="106" r="96"/></clipPath>';
+    s += '<circle class="av-plat" cx="' + c2 + '" cy="106" r="96" fill="url(#avpc' + state + ')"/>';
+    s += '<g clip-path="url(#' + sid + 'm)">' + inner(avatarSVG(me, { mode: 'head', state: state }), c2 - 96, 8, 192, 192) + '</g>';
+    s += '<circle class="av-ring" cx="' + c2 + '" cy="106" r="96" fill="none" stroke-width="3"/>';
+    return '<svg class="avscene s-' + state + ' m-head" viewBox="0 0 ' + W2 + ' 212" xmlns="http://www.w3.org/2000/svg">' + plat() + s + '</svg>';
+  }
+  function plat() {
+    return '<defs>' +
+      '<radialGradient id="avplon" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#ff5a63"/><stop offset=".6" stop-color="#b3121d"/><stop offset="1" stop-color="#5a070d"/></radialGradient>' +
+      '<radialGradient id="avploff" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#4a4a52"/><stop offset="1" stop-color="#1c1c21"/></radialGradient>' +
+      '<radialGradient id="avplwait" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#8a3a40"/><stop offset="1" stop-color="#2a1416"/></radialGradient>' +
+      '<radialGradient id="avpcon" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#4a141a"/><stop offset=".72" stop-color="#22090c"/><stop offset="1" stop-color="#14070a"/></radialGradient>' +
+      '<radialGradient id="avpcoff" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#26262c"/><stop offset="1" stop-color="#121215"/></radialGradient>' +
+      '<radialGradient id="avpcwait" cx="50%" cy="42%" r="60%"><stop offset="0" stop-color="#33181b"/><stop offset="1" stop-color="#161012"/></radialGradient>' +
+      '</defs>';
+  }
+
+  var AVATAR_CSS = [
+    '.av{overflow:visible}.avscene{overflow:visible}',
+    '.av .av-up{animation:av-breathe 3.2s ease-in-out infinite}',
+    '.av.s-off .av-up{animation-duration:4.8s}',
+    '@keyframes av-breathe{50%{transform:translateY(-1.8px)}}',
+    '.av .av-blink{animation:av-blink 4.6s infinite}',
+    '.av .av-eyes>g:nth-child(2){animation-delay:.02s}',
+    '@keyframes av-blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}',
+    '.av.s-on .av-wave{animation:av-wave 1.2s ease-in-out infinite}',
+    '@keyframes av-wave{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(14deg)}}',
+    '.av.s-on .av-arml{animation:av-arml 2.6s ease-in-out infinite}',
+    '@keyframes av-arml{50%{transform:rotate(6deg)}}',
+    '.av.s-on .av-head{animation:av-bob 2.6s ease-in-out infinite}',
+    '@keyframes av-bob{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}',
+    '.av.s-off .av-head{animation:av-nod 4.8s ease-in-out infinite;transform:rotate(7deg)}',
+    '@keyframes av-nod{0%,100%{transform:rotate(6deg)}50%{transform:rotate(10deg) translateY(1px)}}',
+    '.av.s-wait .av-head{animation:av-turn 2.4s ease-in-out infinite}',
+    '@keyframes av-turn{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}',
+    '.av.s-wait .av-look{animation:av-look 2.4s ease-in-out infinite}',
+    '@keyframes av-look{0%,100%{transform:translateX(-3.6px)}50%{transform:translateX(3.6px)}}',
+    '.av.s-wait .av-arml,.av.s-wait .av-wave{animation:av-shrug 1.2s ease-in-out infinite}',
+    '@keyframes av-shrug{50%{transform:translateY(-2px)}}',
+    '.av .av-sway{animation:av-sway 2.6s ease-in-out infinite}.av .av-sway2{animation:av-sway 2.6s ease-in-out infinite reverse}',
+    '@keyframes av-sway{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}',
+    '.av .av-cape{animation:av-cape 2.2s ease-in-out infinite}',
+    '@keyframes av-cape{0%,100%{transform:skewX(-3deg)}50%{transform:skewX(4deg)}}',
+    '.av .av-wingl{animation:av-wingl 1.6s ease-in-out infinite}.av .av-wingr{animation:av-wingr 1.6s ease-in-out infinite}',
+    '@keyframes av-wingl{50%{transform:rotate(12deg)}}@keyframes av-wingr{50%{transform:rotate(-12deg)}}',
+    '.av .av-bubble{animation:av-bubble 4.8s ease-in-out infinite}',
+    '@keyframes av-bubble{0%,100%{transform:scale(.25)}50%{transform:scale(1)}}',
+    '.av .av-z{animation:av-z 3s ease-in-out infinite;opacity:0}.av .av-z2{animation-delay:1s}.av .av-z3{animation-delay:2s}',
+    '@keyframes av-z{0%{opacity:0;transform:translate(0,6px)}30%{opacity:.95}100%{opacity:0;transform:translate(8px,-14px)}}',
+    '.av .av-dot{animation:av-dot 1.1s ease-in-out infinite}.av .av-dot2{animation-delay:.18s}.av .av-dot3{animation-delay:.36s}',
+    '@keyframes av-dot{0%,100%{transform:translateY(0);opacity:.45}40%{transform:translateY(-6px);opacity:1}}',
+    '.av .av-sp1,.av .av-sp2,.av .av-sp3{animation:av-sp 1.8s ease-in-out infinite}.av .av-sp2{animation-delay:.6s}.av .av-sp3{animation-delay:1.2s}',
+    '@keyframes av-sp{0%,100%{transform:scale(.2) rotate(0);opacity:0}50%{transform:scale(1) rotate(45deg);opacity:1}}',
+    '.av.s-on .av-hop{animation:av-hop 2.6s cubic-bezier(.3,0,.3,1) infinite}',
+    '@keyframes av-hop{0%,58%,100%{transform:translateY(0) scaleY(1)}66%{transform:translateY(0) scaleY(.95)}78%{transform:translateY(-12px) scaleY(1.03)}90%{transform:translateY(0) scaleY(.98)}}',
+    '.av.s-on .av-shadow{animation:av-shadow 2.6s cubic-bezier(.3,0,.3,1) infinite}',
+    '@keyframes av-shadow{0%,58%,100%{transform:scale(1)}78%{transform:scale(.72);opacity:.6}}',
+    '.av-pop{animation:av-pop .7s cubic-bezier(.3,1.6,.5,1) both}',
+    '@keyframes av-pop{0%{transform:scale(0) translateY(30px);opacity:0}100%{transform:scale(1);opacity:1}}',
+    '.avscene .av-ring{stroke:rgba(255,255,255,.14)}.avscene.s-on .av-ring{stroke:#ff4b55;filter:drop-shadow(0 0 6px #ff2a36)}',
+    '.avscene.s-wait .av-ring{stroke:#fff;stroke-dasharray:40 300;animation:av-spin 1.1s linear infinite}',
+    '@keyframes av-spin{to{stroke-dashoffset:-340}}',
+    '.av.still *,.avscene.still *{animation:none!important}',
+    '.nohop .av-hop,.nohop .av-shadow{animation:none!important}',
+    '@media (prefers-reduced-motion:reduce){.av .av-hop,.av .av-shadow,.av-pop{animation:none!important}}'
+  ].join('\n');
+
+  // ready-made heroes: the user's four rigged Meshy people (the drawn look is only the fallback without WebGL)
+  var P = function (name, years, o) { o.key = name; return o; };
+  var AV_PRESETS = [
+    P('ninja', 20, { model: 'meshy', char: 'ninja', age: 'adult', build: 'slim', face: 'oval', skin: '#f9d3b4', hair: 'short', hairColor: '#17120f', top: 'tee', topColor: '#17120f', bottom: 'jeans', bottomColor: '#17120f', shoes: 'sneakers', shoeColor: '#d10d24' }),
+    P('girl', 25, { model: 'meshy', char: 'girl', age: 'adult', build: 'slim', face: 'oval', skin: '#f1c39f', hair: 'long', hairColor: '#4a2c1a', eyes: 'lashes', top: 'jacket', topColor: '#1c1c22', bottom: 'jeans', bottomColor: '#2f4b7c', shoes: 'sneakers', shoeColor: '#ffffff' }),
+    P('coat', 25, { model: 'meshy', char: 'coat', age: 'adult', build: 'slim', face: 'oval', skin: '#f9d3b4', hair: 'wavy', hairColor: '#c9a063', eyes: 'lashes', top: 'jacket', topColor: '#e3a92c', bottom: 'jeans', bottomColor: '#17120f', shoes: 'boots', shoeColor: '#17120f' }),
+    P('pink', 20, { model: 'meshy', char: 'pink', age: 'adult', build: 'slim', face: 'oval', skin: '#e8b48f', hair: 'bun', hairColor: '#17120f', eyes: 'lashes', top: 'hoodie', topColor: '#f2b8cf', bottom: 'joggers', bottomColor: '#f2b8cf', shoes: 'sneakers', shoeColor: '#ffffff' }),
+    P('dress', 25, { model: 'meshy', char: 'dress', age: 'adult', build: 'slim', face: 'oval', skin: '#f1c39f', hair: 'wavy', hairColor: '#a4441c', eyes: 'lashes', top: 'jacket', topColor: '#3a6ea8', bottom: 'skirt', bottomColor: '#f4efe6', shoes: 'sneakers', shoeColor: '#f4efe6' }),
+    P('bomber', 25, { model: 'meshy', char: 'bomber', age: 'adult', skin: '#e8b48f', hair: 'short', hairColor: '#17120f', top: 'jacket', topColor: '#1c1c22', bottom: 'joggers', bottomColor: '#1c1c22', shoes: 'sneakers', shoeColor: '#ffffff' }),
+    P('blazer', 30, { model: 'meshy', char: 'blazer', age: 'adult', skin: '#f1c39f', hair: 'side', hairColor: '#a88a63', top: 'jacket', topColor: '#1f2a4a', bottom: 'jeans', bottomColor: '#d8cbb5', shoes: 'boots', shoeColor: '#3a2418' }),
+    P('muscle', 25, { model: 'meshy', char: 'muscle', age: 'adult', build: 'strong', skin: '#e8b48f', hair: 'wavy', hairColor: '#6b4a2b', top: 'tee', topColor: '#ffffff', bottom: 'jeans', bottomColor: '#2f4b7c', shoes: 'sneakers', shoeColor: '#ffffff' }),
+  ];
+
+  root.AV = AV; root.AV_PRESETS = AV_PRESETS; root.AVATAR_CSS = AVATAR_CSS;
+  root.avatarSVG = avatarSVG; root.avatarScene = avatarScene; root.avNormalize = avNormalize; root.avRandom = avRandom; root.avShade = shade;
+})(typeof window !== 'undefined' ? window : this);
+document.head.insertAdjacentHTML("beforeend","<style>"+AVATAR_CSS+"</style>");
+</script>
+<script>
+(function(){
+  var C={
+    AUTO:["Ближайший сервер","#ff8124","#ffb267"],EU:["Европа","#1f4fd8","#ffd84d"],
+    NL:["Нидерланды","#ff8124","#ffb267"],DE:["Германия","#2fb84a","#b4f56a"],FI:["Финляндия","#1f7ff0","#7fd6ff"],
+    SE:["Швеция","#e0a800","#ffe08a"],US:["США","#3b5bff","#9fb4ff"],JP:["Япония","#ff3f6e","#ffa6c0"],
+    GB:["Великобритания","#3b5bff","#9fb4ff"],FR:["Франция","#ff5a5a","#ffc2a8"],PL:["Польша","#ff4f6d","#ffd0d8"],
+    TR:["Турция","#ff5e2a","#ffb08a"],KZ:["Казахстан","#13b5c9","#9cf3ff"],EE:["Эстония","#3d8bff","#c2e0ff"],
+    LV:["Латвия","#b8264a","#ff9fb6"],LT:["Литва","#f0b400","#ffe680"],CH:["Швейцария","#e83a3a","#ffd6d6"],
+    AT:["Австрия","#ff6b6b","#ffe1e1"],SG:["Сингапур","#ff4fa3","#ffb8dc"],HK:["Гонконг","#ff3d6e","#ffb3c6"],
+    CA:["Канада","#ff4545","#ffc0a0"],RU:["Россия","#3d6bff","#a8c0ff"],AE:["ОАЭ","#e0a000","#fff0a0"],
+    IT:["Италия","#29b35a","#c8ffb0"],ES:["Испания","#ff9a1f","#ffe08a"],CZ:["Чехия","#3577ff","#ffb0c0"],
+    KR:["Южная Корея","#c040ff","#f0b8ff"],IN:["Индия","#ff8f1f","#ffd28a"],BR:["Бразилия","#1fbf5a","#ffe45c"],
+    AU:["Австралия","#00a6b4","#9ff2e6"],NO:["Норвегия","#2266dd","#b4d4ff"],UA:["Украина","#1f7ff0","#ffe14d"],
+    MD:["Молдова","#7a3cff","#ffcf3f"],AM:["Армения","#ff6a1f","#ffbf80"],GE:["Грузия","#d81b4a","#ffb0c0"],
+    RO:["Румыния","#ffb300","#ffe9a8"],BG:["Болгария","#2fb84a","#ffd0d0"],RS:["Сербия","#c0304a","#a8c0ff"],
+    HU:["Венгрия","#29b35a","#ffb0a0"],DK:["Дания","#e0244f","#ffe0e6"],IL:["Израиль","#3a7bff","#e0eaff"]
+  };
+  /*FLAGS*/
+  var GLOBE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>';
+  function setFlag(e,s){var cc=s&&s.kind!=="warp"?s.country:"";e.className=e.className.replace(/ ?none/g,"");if(FLAGS[cc]){e.style.backgroundImage="url("+FLAGS[cc]+")";e.innerHTML=""}else{e.style.backgroundImage="";e.classList.add("none");e.innerHTML=GLOBE}return e}
+  function flagEl(s,big){var e=document.createElement("span");e.className="flag"+(big?" big":"");return setFlag(e,s)}
+  var POOL=[["#ff8124","#ffb267"],["#2fb84a","#b4f56a"],["#1f7ff0","#7fd6ff"],["#e0a800","#ffe08a"],["#3b5bff","#9fb4ff"],["#ff3f6e","#ffa6c0"],["#13b5c9","#9cf3ff"]];
+  function flavor(s){
+    var c=C[s.country];
+    if(c)return {name:s.kind==="warp"?"Ближайший сервер":c[0],a:c[1],b:c[2]};
+    var h=0;for(var i=0;i<s.name.length;i++)h=(h*31+s.name.charCodeAt(i))>>>0;
+    var p=POOL[h%POOL.length];return {name:"Сервер",a:p[0],b:p[1]};
+  }
+  function clean(n){return n.replace(/[\u{1F1E6}-\u{1F1FF}]/gu,"").trim()||n}
+  function esc(t){return String(t).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+
+  var api=window.pvState?{
+    state:window.pvState,toggle:window.pvToggle,select:window.pvSelect,add:window.pvAdd,refreshSub:window.pvRefreshSub,
+    removeSub:window.pvRemoveSub,removeServer:window.pvRemoveServer,ping:window.pvPing,set:window.pvSet,openData:window.pvOpenData,resetWarp:window.pvResetWarp,importHapp:window.pvImportHapp,refreshAll:window.pvRefreshAll,restartAdmin:window.pvRestartAdmin,
+    stats:window.pvStats,resetStats:window.pvResetStats,log:window.pvLog,clearLogs:window.pvClearLogs,diagnose:window.pvDiagnose,resetSettings:window.pvResetSettings,resetNetwork:window.pvResetNetwork,theme:window.pvTheme
+  }:demo();
+
+  var S=null,page="home",lastNotice=0,$=function(id){return document.getElementById(id)};
+  document.querySelectorAll(".ri[data-p],[data-go]").forEach(function(b){b.addEventListener("click",function(){show(b.dataset.p||b.dataset.go)})});
+  function show(p){page=p;document.querySelectorAll(".page").forEach(function(x){x.classList.toggle("on",x.id===p)});
+    document.querySelectorAll(".ri[data-p]").forEach(function(x){x.classList.toggle("on",x.dataset.p===p)});statsT=logT=0;render()}
+  $("power").addEventListener("click",function(){api.toggle().then(poll)});
+  $("chg").addEventListener("click",function(){show("servers")});
+  $("pingBtn").addEventListener("click",function(){api.ping();toast("Проверяю серверы…")});
+
+  // Settings change at once on screen, then the app confirms them (and reconnects if needed).
+  function setOpt(k,v){if(S){S.settings[k]=v;render()}return Promise.resolve(api.set(k,v)).then(poll)}
+  function restartAdmin(){toast("Подтвердите запуск от имени администратора");api.restartAdmin().then(poll)}
+  $("mProxy").addEventListener("click",function(){if(!S)return;var s=S.settings;
+    if(s.systemProxy&&!s.tun){toast("Нужен хотя бы один режим: системный прокси или TUN");return}setOpt("systemProxy",!s.systemProxy)});
+  $("mTun").addEventListener("click",function(){if(!S)return;setOpt("tun",!S.settings.tun)});
+  document.querySelectorAll("[data-eng]").forEach(function(b){b.addEventListener("click",function(){if(!S||b.disabled)return;var s=S.settings,e=b.dataset.eng;
+    var p=s.tunEngine!==e?setOpt("tunEngine",e):Promise.resolve();p.then(function(){if(!S.settings.tun)return setOpt("tun",true)})})});
+  $("dnsBtn").addEventListener("click",function(){if(!S)return;setOpt("localDns",!S.settings.localDns)});
+  $("admBtn").addEventListener("click",restartAdmin);
+  $("diagAdm").addEventListener("click",restartAdmin);
+  $("rfBtn").addEventListener("click",function(){if(S&&S.pinging)return;$("rfBtn").classList.add("spin");api.refreshAll().then(poll)});
+  $("addBtn").addEventListener("click",function(){var t=$("addText").value.trim();if(!t){toast("Сначала вставьте ссылку");return}api.add(t);$("addText").value=""});
+  $("happBtn").addEventListener("click",function(){api.importHapp().then(poll)});
+  $("pasteBtn").addEventListener("click",function(){if(navigator.clipboard&&navigator.clipboard.readText)navigator.clipboard.readText().then(function(t){$("addText").value=t}).catch(function(){toast("Нажмите в поле и Ctrl+V")});else toast("Нажмите в поле и Ctrl+V")});
+  $("resetStats").addEventListener("click",function(){api.resetStats();statsT=0;toast("Статистика сброшена")});
+  $("diagBtn").addEventListener("click",function(){if(S&&S.diag&&S.diag.running)return;api.diagnose();toast("Проверка началась");setTimeout(poll,300)});
+  $("logOpen").addEventListener("click",function(){api.openData()});
+  $("logClear").addEventListener("click",function(){Promise.resolve(api.clearLogs()).then(function(){logText=null;logT=0;loadLog(true);toast("Журналы очищены")})});
+  $("logCopy").addEventListener("click",function(){
+    var box=$("logbox"),t=box.textContent;
+    function fb(){var r=document.createRange();r.selectNodeContents(box);var sl=getSelection();sl.removeAllRanges();sl.addRange(r);
+      try{document.execCommand("copy");toast("Скопировано")}catch(e){toast("Текст выделен: нажмите Ctrl+C")}}
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){toast("Скопировано")}).catch(fb);else fb()});
+
+  function toast(t){var el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){el.classList.remove("show")},3400)}
+  function fmtSpeed(b){var bits=b*8;if(bits>=1e6)return (bits/1e6).toFixed(1)+" Мбит/с";if(bits>=1e3)return Math.round(bits/1e3)+" Кбит/с";return Math.round(bits)+" бит/с"}
+  function fmtBytes(b){if(!b)return "0";var u=["Б","КБ","МБ","ГБ","ТБ"],i=0;while(b>=1024&&i<4){b/=1024;i++}return (i?b.toFixed(1):b)+" "+u[i]}
+  function fmtDate(sec){var d=new Date(sec*1000);return ("0"+d.getDate()).slice(-2)+"."+("0"+(d.getMonth()+1)).slice(-2)+"."+d.getFullYear()}
+  function pad(v){return String(v).padStart(2,"0")}
+
+  function poll(){return api.state().then(function(s){S=s;render()}).catch(function(){})}
+  // the 3D girl's model is too big to sit inside the page (WebView2 shows at most 2 MB), so the app hands it over first
+  function start(){setInterval(poll,800);poll()}
+  function loadModel(i,acc){return Promise.resolve(window.pvModelPart(i)).then(function(p){return p?loadModel(i+1,acc+p):acc})}
+  if(window.pvModelPart&&!window.GIRLS3D)loadModel(0,"").then(function(t){var d=JSON.parse(t);if(d&&d.models){window.GIRLS3D=d;if(window.Hero3DLoadModels)Hero3DLoadModels()}}).catch(function(){}).then(start);
+  else start();
+
+  var listKey="",gridKey="",subKey="";
+  function render(){
+    if(!S)return;
+    var c=S.conn,sel=S.servers.find(function(x){return x.id===S.selected})||S.servers[0],f=flavor(sel);
+    document.documentElement.style.setProperty("--c1",f.a);document.documentElement.style.setProperty("--c2",f.b);
+    var on=c.status==="on",busy=c.status==="connecting"||c.status==="reconnecting";
+    document.body.classList.toggle("on",on);document.body.classList.toggle("busy",busy);
+    var checking=!!(S.diag&&S.diag.running);document.body.classList.toggle("diag",checking);
+    $("pillt").textContent=on?"Подключено":busy?(c.status==="reconnecting"?"Переподключение":"Подключение"):"Не подключено";
+    if(on){var t=Math.max(0,Math.floor(Date.now()/1000)-c.since);$("timer").textContent=pad(Math.floor(t/3600))+":"+pad(Math.floor(t%3600/60))+":"+pad(t%60);
+      $("down").textContent=fmtSpeed(c.down);$("up").textContent=fmtSpeed(c.up)}
+    else{$("timer").textContent="00:00:00";$("down").textContent="0";$("up").textContent="0"}
+    $("hint").textContent=checking?"Идёт проверка режимов, кнопки на это время выключены":busy?(c.busy||""):(on?(c.ip?"Ваш IP для сайтов: "+c.ip+(c.loc&&C[c.loc]?" · "+C[c.loc][0]:""):""):"");
+    $("err").textContent=c.status==="error"?c.error:"";
+    renderHero(c,on,busy);
+    var place=sel.kind==="warp"?(on&&c.loc&&C[c.loc]?"WARP · "+C[c.loc][0]:"Cloudflare WARP"):clean(sel.name);
+    $("locn").textContent=place;setFlag($("locflag"),sel);
+    var sub=sel.subId&&S.subs.find(function(x){return x.id===sel.subId});
+    $("subbar").innerHTML=sub?("<span>Подписка <b>"+esc(sub.title||"")+"</b></span>"+(sub.expire?"<span>до "+fmtDate(sub.expire).slice(0,5)+"</span>":"")):("<span>Бесплатный сервер <b>WARP</b></span>"+(S.settings.autoReconnect?"<span>авто ✓</span>":""));
+    $("ver").textContent="v"+S.version;
+    $("rfBtn").classList.toggle("spin",!!S.pinging);
+    var st=S.settings,tun=!!st.tun;
+    [["mProxy",!!st.systemProxy],["mTun",tun],["dnsBtn",!!st.localDns]].forEach(function(x){$(x[0]).classList.toggle("on",x[1]);$(x[0]).setAttribute("aria-pressed",x[1])});
+    $("engSeg").classList.toggle("idle",!tun);
+    document.querySelectorAll("[data-eng]").forEach(function(b){var e=b.dataset.eng,has=!S.engines||S.engines[e]!==false;
+      if(!b.dataset.t)b.dataset.t=b.title;b.disabled=!has;b.title=has?b.dataset.t:"Нет файла движка в папке core";
+      b.classList.toggle("on",st.tunEngine===e);b.setAttribute("aria-pressed",tun&&st.tunEngine===e)});
+    $("adm").classList.toggle("show",tun&&!S.elevated);
+    $("route").textContent=on&&c.route?c.route:"";
+    if(c.noticeId!==lastNotice){if(lastNotice&&c.notice)toast(c.notice);lastNotice=c.noticeId}
+
+    var key=JSON.stringify([S.servers.map(function(s){return [s.id,s.name,s.country,s.ping]}),S.selected,!!st.sortByPing]);
+    if(key!==listKey){listKey=key;renderList(S)}
+    if(page==="servers"&&key!==gridKey){gridKey=key;renderGrid(S)}
+    var sk=JSON.stringify(S.subs);if(page==="subs"&&sk!==subKey){subKey=sk;renderSubs(S)}
+    if(page==="settings")renderSettings();
+    renderGame();
+    if(page==="stats"&&Date.now()-statsT>1500){statsT=Date.now();loadStats()}
+    if(page==="logs"){renderDiag();if(Date.now()-logT>2000){logT=Date.now();loadLog(false)}}
+  }
+  function pingText(s){return s.ping>0?s.ping+" мс":s.ping<0?"нет":""}
+  function ordered(S){var l=S.servers.slice();if(S.settings.sortByPing){var r=function(s){return s.ping>0?s.ping:s.ping<0?1e9:1e8};l.sort(function(a,b){return r(a)-r(b)})}return l}
+  function renderList(S){
+    var el=$("scroll"),keep=el.scrollTop;el.innerHTML="";
+    ordered(S).forEach(function(s){
+      var f=flavor(s),b=document.createElement("button");b.type="button";b.className="srv"+(s.id===S.selected?" on":"");
+      var title=s.kind==="warp"?"Cloudflare WARP":clean(s.name),small=s.kind==="warp"?"бесплатно · ближайший":(f.name!=="Сервер"?f.name+" · ":"")+s.proto;
+      b.appendChild(flagEl(s));
+      var nm=document.createElement("span");nm.className="nm";nm.innerHTML='<span>'+esc(title)+'</span><small>'+esc(small)+'</small>';b.appendChild(nm);
+      var ms=document.createElement("span");ms.className="ms"+(s.ping<0?" bad":"");ms.textContent=pingText(s);b.appendChild(ms);
+      b.addEventListener("click",function(){api.select(s.id).then(poll)});el.appendChild(b);
+    });
+    if(S.servers.length<2){var e=document.createElement("div");e.className="empty";e.innerHTML='Свои серверы — в разделе <button class="linkb">Подписки</button>.';
+      e.querySelector("button").addEventListener("click",function(){show("subs")});el.appendChild(e)}
+    el.scrollTop=keep;
+  }
+  function renderGrid(S){
+    var el=$("grid");el.innerHTML="";
+    ordered(S).forEach(function(s){
+      var f=flavor(s),d=document.createElement("button");d.type="button";d.className="tile"+(s.id===S.selected?" on":"");
+      var title=s.kind==="warp"?"Cloudflare WARP":clean(s.name);
+      var top=document.createElement("div");top.className="top";top.appendChild(flagEl(s,true));
+      var tx=document.createElement("div");tx.innerHTML='<b>'+esc(title)+'</b><small>'+esc(s.kind==="warp"?"Бесплатно · ближайший":(f.name!=="Сервер"?f.name:s.proto))+'</small>';top.appendChild(tx);
+      d.appendChild(top);
+      var bot=document.createElement("div");bot.className="pg";bot.textContent=(pingText(s)?pingText(s)+" · ":"")+s.proto;d.appendChild(bot);
+      if(s.kind!=="warp"){var x=document.createElement("button");x.className="x";x.textContent="✕";x.title="Удалить";x.addEventListener("click",function(ev){ev.stopPropagation();api.removeServer(s.id).then(poll)});d.appendChild(x)}
+      d.addEventListener("click",function(){api.select(s.id).then(poll)});el.appendChild(d);
+    });
+  }
+  function renderSubs(S){
+    var el=$("subList");el.innerHTML="";
+    if(!S.subs.length){el.innerHTML='<div class="empty">Подписок пока нет. Когда у вас появятся свои серверы, вставьте ссылку на подписку выше.</div>';return}
+    S.subs.forEach(function(s){
+      var used=s.upload+s.download,d=document.createElement("div");d.className="card";
+      d.innerHTML='<h3>'+esc(s.title||s.url)+'</h3><p class="hint">Серверов: '+s.count+(s.expire?" · до "+fmtDate(s.expire):"")+(s.updated?" · обновлено "+fmtDate(s.updated):"")+'</p>'+
+        (s.total?'<div class="bar"><i style="width:'+Math.min(100,used/s.total*100)+'%"></i></div><p class="hint">Израсходовано '+fmtBytes(used)+' из '+fmtBytes(s.total)+'</p>':(used?'<p class="hint">Израсходовано '+fmtBytes(used)+'</p>':''))+
+        '<div class="row"><button class="btn small r">Обновить</button><button class="btn small danger d">Удалить</button></div>';
+      d.querySelector(".r").addEventListener("click",function(){api.refreshSub(s.id)});
+      d.querySelector(".d").addEventListener("click",function(){api.removeSub(s.id).then(poll)});
+      el.appendChild(d);
+    });
+  }
+
+  // ---- Settings: every option of Happ, grouped by section ----
+  var notSB=function(s){return !s.tun||s.tunEngine!=="singbox"};
+  var SECT=[
+    {id:"conn",t:"Подключение",f:[
+      {k:"systemProxy",ty:"bool",l:"Системный прокси",d:"Windows направляет в VPN браузеры и программы, которые берут настройки прокси. Права администратора не нужны. Когда VPN выключается, настройки Windows возвращаются как были."},
+      {k:"tun",ty:"bool",l:"TUN: весь трафик компьютера",d:"Виртуальный сетевой адаптер: через VPN идут все программы, включая игры и программы без настроек прокси. Нужен запуск от имени администратора. Можно включить вместе с системным прокси."},
+      {k:"tunEngine",ty:"seg",l:"Движок TUN",d:"sing-box самый надёжный, рекомендуется. Xray TUN и tun2proxy — запасные варианты, как в Happ: попробуйте их, если с sing-box что-то не работает.",
+        o:[["singbox","sing-box"],["xray","Xray TUN"],["tun2proxy","tun2proxy"]],off:function(v,S){return S.engines&&S.engines[v]===false}},
+      {k:"tunStack",ty:"seg",l:"Стек TUN",d:"Только для sing-box. Смешанный: системный для TCP и gVisor для UDP, рекомендуется. Системный: быстрее всего, но может мешать брандмауэр. gVisor: работает везде, чуть медленнее.",
+        o:[["mixed","Смешанный"],["system","Системный"],["gvisor","gVisor"]],dim:notSB},
+      {k:"strictRoute",ty:"bool",l:"Строгий маршрут",d:"Только для sing-box. Не даёт программам и DNS-запросам идти мимо туннеля. Лучше оставить включённым.",dim:notSB},
+      {k:"tunMtu",ty:"num",l:"MTU адаптера",d:"Размер пакета в туннеле. 1500 подходит почти всегда. Если сайты грузятся не до конца, попробуйте 1400.",min:1280,max:9000},
+      {k:"autoReconnect",ty:"bool",l:"Авто-переподключение",d:"Если связь пропадёт или движок остановится, приложение само поднимет соединение."}
+    ]},
+    {id:"dns",t:"DNS",f:[
+      {k:"localDns",ty:"bool",l:"Локальный DNS",d:"Адреса сайтов узнаются через DNS вашего провайдера, а не через VPN. Так быстрее, но провайдер видит, какие сайты вы открываете. Включайте, если какие-то сайты не открываются."},
+      {k:"remoteDns",ty:"text",l:"DNS через VPN",d:"Можно https://…, tls://… или просто адрес. Выберите из списка или впишите свой.",list:"dnsPresets",ph:"https://1.1.1.1/dns-query"},
+      {k:"directDns",ty:"text",l:"DNS напрямую",d:"Для сайтов, которые идут мимо VPN, и для локального DNS. Пусто: DNS вашего провайдера.",ph:"DNS провайдера"},
+      {k:"ipMode",ty:"seg",l:"IPv4 и IPv6",d:"Какие адреса сайтов использовать. «Сначала IPv4» подходит почти всем.",o:[["ipv4_only","Только IPv4"],["prefer_ipv4","Сначала IPv4"],["prefer_ipv6","Сначала IPv6"]]}
+    ]},
+    {id:"route",t:"Маршруты",f:[
+      {k:"globalProxy",ty:"bool",l:"Весь трафик через VPN",d:"Выключите, чтобы через VPN шли только сайты из списка «Всегда через VPN», а всё остальное напрямую."},
+      {k:"bypassLan",ty:"bool",l:"Локальная сеть напрямую",d:"Роутер, принтеры и другие компьютеры дома открываются мимо VPN."},
+      {k:"sniff",ty:"bool",l:"Узнавать сайт по трафику",d:"Помогает правилам ниже узнать сайт, даже когда программа обращается к нему по IP-адресу."},
+      {k:"directList",ty:"area",l:"Напрямую, мимо VPN",d:"По одному на строку: сайт (example.com, вместе с поддоменами) или адрес и сеть (1.2.3.4, 10.0.0.0/8). После # можно писать заметки. Claude и сайты Anthropic всегда идут напрямую.",ph:"example.com\n192.168.0.0/16"},
+      {k:"proxyList",ty:"area",l:"Всегда через VPN",d:"Эти сайты и адреса идут через VPN, даже когда «Весь трафик через VPN» выключен.",ph:"youtube.com"},
+      {k:"blockList",ty:"area",l:"Блокировать",d:"Эти сайты и адреса не будут открываться, например реклама.",ph:"ads.example.com"}
+    ]},
+    {id:"apps",t:"Программы",f:[
+      {k:"appMode",ty:"seg",l:"Какие программы идут через VPN",d:"Работает в TUN на движке sing-box. Через системный прокси программы выбирают сами.",o:[["all","Все"],["bypass","Все, кроме списка"],["only","Только из списка"]],dim:notSB},
+      {k:"apps",ty:"area",l:"Список программ",d:"Имена файлов программ, по одному на строку, например chrome.exe или Telegram.exe. Имя видно в Диспетчере задач, на вкладке «Подробности».",ph:"chrome.exe\nTelegram.exe",dim:notSB}
+    ]},
+    {id:"xray",t:"Обход блокировок",intro:"Эти настройки работают для серверов на Xray: VLESS, VMess, Trojan и Shadowsocks из подписок. Меняйте их, если провайдер мешает подключиться.",f:[
+      {k:"fragment",ty:"bool",l:"Фрагментация",d:"Делит первые пакеты соединения на части, чтобы провайдер не распознал подключение."},
+      {k:"fragPackets",ty:"text",l:"Какие пакеты делить",d:"tlshello: только приветствие TLS, рекомендуется. 1-3: первые три пакета.",ph:"tlshello",dim:function(s){return !s.fragment}},
+      {k:"fragLength",ty:"text",l:"Размер частей, байт",d:"Например 100-200.",ph:"100-200",dim:function(s){return !s.fragment}},
+      {k:"fragInterval",ty:"text",l:"Пауза между частями, мс",d:"Например 10-20.",ph:"10-20",dim:function(s){return !s.fragment}},
+      {k:"noises",ty:"bool",l:"Шумовые пакеты",d:"Перед соединением отправляет случайные UDP-пакеты. Помогает для QUIC при сильных блокировках."},
+      {k:"noiseType",ty:"seg",l:"Вид шума",o:[["rand","Случайный"],["str","Текст"],["base64","Base64"]],dim:function(s){return !s.noises}},
+      {k:"noisePacket",ty:"text",l:"Пакет",d:"Для случайного шума это размер, например 10-20. Для текста и Base64 это само содержимое.",ph:"10-20",dim:function(s){return !s.noises}},
+      {k:"noiseDelay",ty:"text",l:"Пауза, мс",d:"Например 10-16.",ph:"10-16",dim:function(s){return !s.noises}},
+      {k:"mux",ty:"bool",l:"Мультиплексирование (Mux)",d:"Несколько соединений внутри одного. Ускоряет открытие страниц на медленной связи. Для серверов с XTLS Vision и XHTTP не используется."},
+      {k:"muxConc",ty:"num",l:"Соединений внутри одного",min:1,max:1024,dim:function(s){return !s.mux}},
+      {k:"xudpConc",ty:"num",l:"Потоков UDP (XUDP)",min:1,max:1024,dim:function(s){return !s.mux}},
+      {k:"xudpQuic",ty:"seg",l:"QUIC внутри Mux",d:"Что делать с QUIC (UDP 443), когда включён Mux.",o:[["reject","Блокировать"],["allow","Разрешить"],["skip","Мимо Mux"]],dim:function(s){return !s.mux}}
+    ]},
+    {id:"ports",t:"Порты и сеть",f:[
+      {k:"proxyPort",ty:"num",l:"Порт прокси",d:"SOCKS5 и HTTP-прокси на этом компьютере (127.0.0.1). Другие программы можно направить сюда вручную. Если порт занят, приложение возьмёт следующий свободный.",min:1024,max:65000},
+      {k:"allowLan",ty:"bool",l:"Разрешить подключения из локальной сети",d:"Телефон или другой компьютер в вашей сети смогут пользоваться VPN через этот компьютер: укажите в них адрес этого компьютера и порт выше. Брандмауэр Windows может спросить разрешение."}
+    ]},
+    {id:"ping",t:"Пинг",f:[
+      {k:"pingType",ty:"seg",l:"Как проверять серверы",d:"TCP: быстрое соединение с сервером. Через сервер: настоящий запрос к сайту через VPN, точнее показывает, работает ли сервер.",o:[["tcp","TCP"],["real","Через сервер"]]},
+      {k:"pingUrl",ty:"text",l:"Адрес для проверки",d:"Страница, которую открывает проверка «Через сервер».",ph:"https://www.gstatic.com/generate_204",dim:function(s){return s.pingType!=="real"}},
+      {k:"pingOnStart",ty:"bool",l:"Проверять серверы при запуске"},
+      {k:"sortByPing",ty:"bool",l:"Сортировать серверы по пингу",d:"Самые быстрые вверху списка."}
+    ]},
+    {id:"subs",t:"Подписки",f:[
+      {k:"subAutoUpdate",ty:"bool",l:"Обновлять подписки автоматически"},
+      {k:"subInterval",ty:"num",l:"Как часто, часов",min:1,max:168,dim:function(s){return !s.subAutoUpdate}},
+      {k:"subUpdateOnStart",ty:"bool",l:"Обновлять при запуске"},
+      {k:"subUserAgent",ty:"text",l:"User-Agent",d:"Как приложение представляется серверу подписки. Пусто: по очереди как v2rayN и как Happ, некоторые подписки отдают серверы только им.",ph:"автоматически"},
+      {k:"sendHwid",ty:"bool",l:"Отправлять ID устройства",d:"Некоторые подписки ограничивают число устройств и без ID не отдают серверы."}
+    ]},
+    {id:"start",t:"Запуск",f:[
+      {k:"autoConnect",ty:"bool",l:"Подключаться при запуске",d:"Включать VPN сразу при открытии приложения."},
+      {k:"autostart",ty:"bool",l:"Запускать вместе с Windows",d:"Приложение откроется само после включения компьютера."},
+      {k:"startMinimized",ty:"bool",l:"Запускать свёрнутым",d:"Когда приложение запускается вместе с Windows, окно сразу сворачивается.",dim:function(s){return !s.autostart}}
+    ]},
+    {id:"log",t:"Журнал",f:[
+      {k:"logLevel",ty:"seg",l:"Подробность журнала",d:"Сколько записывать в журналы движков. «Подробно» и «Отладка» нужны только для поиска проблем.",o:[["warning","Обычно"],["info","Подробно"],["debug","Отладка"]]},
+      {ty:"btns",l:"Журналы и проверка",b:[["Открыть журнал",function(){show("logs")}],["Проверить все режимы",function(){show("logs");$("diagBtn").click()}]]}
+    ]},
+    {id:"look",t:"Оформление",f:[
+      {ty:"theme",l:"Стиль приложения",d:"Применяется сразу, вместе с цветом рамки окна."},
+      {k:"heroButton",ty:"bool",l:"Показывать героя на кнопке",d:"На главной вместо обычной красной кнопки стоит ваш человечек: спит, когда VPN выключен, ждёт при подключении и машет рукой, когда вы под защитой. Рядом встают друзья из банды."},
+      {k:"heroHop",ty:"bool",l:"Прыжки героя",d:"Герой подпрыгивает от радости, пока VPN включён.",dim:function(s){return !s.heroButton}},
+      {ty:"btns",l:"Мой герой",d:"Возраст, внешность, одежда, с телом или только голова.",b:[["Настроить героя",function(){show("hero")}]]}
+    ]},
+    {id:"svc",t:"Сброс",f:[
+      {ty:"btns",l:"Данные",d:"Здесь лежат настройки, журналы и статистика.",b:[["Папка с данными",function(){api.openData()}],["Получить WARP заново",function(){api.resetWarp().then(poll)}]]},
+      {ty:"btns",l:"Сбросить сеть",d:"Выключает VPN, убирает настройки прокси Windows и адаптеры VPN, очищает кэш DNS. Помогает, если после сбоя пропал интернет.",b:[["Сбросить сеть",function(){api.resetNetwork().then(poll)},"danger"]]},
+      {ty:"btns",l:"Сбросить настройки",d:"Все настройки вернутся к начальным. Серверы, подписки и статистика останутся.",b:[["Сбросить настройки",function(){api.resetSettings().then(function(){built="";poll()})},"danger"]]}
+    ]}
+  ];
+  var sect="conn",built="",fields=[];
+  try{sect=localStorage.getItem("pvSect")||"conn"}catch(e){}
+  SECT.forEach(function(x){var b=document.createElement("button");b.type="button";b.textContent=x.t;b.dataset.s=x.id;
+    b.addEventListener("click",function(){sect=x.id;try{localStorage.setItem("pvSect",sect)}catch(e){}renderSettings();$("settings").scrollTop=0});$("snav").appendChild(b)});
+  function renderSettings(){
+    if(!S)return;
+    var x=SECT.find(function(q){return q.id===sect})||SECT[0];
+    document.querySelectorAll("#snav button").forEach(function(b){b.classList.toggle("on",b.dataset.s===x.id)});
+    if(built!==x.id){built=x.id;buildPane(x)}
+    syncPane();
+  }
+  function saved(){toast(S&&S.conn.status==="on"?"Сохранено, переподключаюсь":"Сохранено")}
+  function buildPane(x){
+    var p=$("spane");p.innerHTML="";fields=[];
+    var h=document.createElement("h2");h.textContent=x.t;p.appendChild(h);
+    if(x.intro){var n=document.createElement("p");n.className="note";n.textContent=x.intro;p.appendChild(n)}
+    x.f.forEach(function(f){
+      var el=document.createElement("div"),ctl=null;el.className="fld";
+      var lab=document.createElement("div");lab.innerHTML=esc(f.l)+(f.d?"<small>"+esc(f.d)+"</small>":"");el.appendChild(lab);
+      switch(f.ty){
+      case "bool":
+        el.classList.add("bool");el.tabIndex=0;el.setAttribute("role","switch");ctl=document.createElement("span");ctl.className="tg";
+        var flip=function(){if(f.k==="systemProxy"&&S.settings.systemProxy&&!S.settings.tun){toast("Нужен хотя бы один режим: системный прокси или TUN");return}setOpt(f.k,!S.settings[f.k])};
+        el.addEventListener("click",flip);el.addEventListener("keydown",function(e){if(e.key===" "||e.key==="Enter"){e.preventDefault();flip()}});break;
+      case "seg":
+        ctl=document.createElement("div");ctl.className="seg sm";ctl.setAttribute("role","group");
+        f.o.forEach(function(o){var b=document.createElement("button");b.type="button";b.textContent=o[1];b.dataset.v=o[0];
+          b.addEventListener("click",function(){if(!b.disabled&&S.settings[f.k]!==o[0])setOpt(f.k,o[0])});ctl.appendChild(b)});break;
+      case "text":case "num":
+        ctl=document.createElement("input");ctl.className="in"+(f.ty==="num"?" num":"");ctl.type=f.ty==="num"?"number":"text";ctl.spellcheck=false;
+        if(f.ph)ctl.placeholder=f.ph;if(f.list)ctl.setAttribute("list",f.list);if(f.min!=null){ctl.min=f.min;ctl.max=f.max}
+        ctl.addEventListener("change",function(){var v=ctl.value.trim();
+          if(f.ty==="num"){v=parseInt(v,10);if(isNaN(v)||v<f.min||v>f.max){toast("Введите число от "+f.min+" до "+f.max);ctl.value=S.settings[f.k];return}}
+          if(v===S.settings[f.k])return;setOpt(f.k,v).then(saved)});
+        ctl.addEventListener("keydown",function(e){if(e.key==="Enter")ctl.blur()});break;
+      case "area":
+        el.classList.add("col");ctl=document.createElement("textarea");ctl.spellcheck=false;if(f.ph)ctl.placeholder=f.ph;
+        ctl.addEventListener("change",function(){if(ctl.value!==S.settings[f.k])setOpt(f.k,ctl.value).then(saved)});break;
+      case "btns":case "theme":
+        el.classList.add("col");ctl=document.createElement("div");ctl.className="row";
+        (f.ty==="theme"?[["Красный туз",function(){applyTheme("ace")},"theme-b","ace"],["Океан и пламя",function(){applyTheme("ocean")},"theme-b","ocean"]]:f.b).forEach(function(q){
+          var b=document.createElement("button");b.type="button";b.className="btn small"+(q[2]?" "+q[2]:"");b.textContent=q[0];if(q[3])b.dataset.themePick=q[3];
+          b.addEventListener("click",q[1]);ctl.appendChild(b)});break;
+      }
+      if(ctl)el.appendChild(ctl);
+      p.appendChild(el);fields.push({f:f,el:el,ctl:ctl});
+    });
+    if(x.id==="apps"||x.id==="conn"){var nt=document.createElement("p");nt.className="note";nt.id="snote";p.appendChild(nt)}
+  }
+  function syncPane(){
+    var s=S.settings;
+    fields.forEach(function(x){var f=x.f,v=f.k?s[f.k]:null;
+      x.el.classList.toggle("dim",!!(f.dim&&f.dim(s,S)));
+      switch(f.ty){
+      case "bool":x.el.classList.toggle("on",!!v);x.el.setAttribute("aria-checked",!!v);break;
+      case "seg":x.ctl.querySelectorAll("button").forEach(function(b){b.classList.toggle("on",b.dataset.v===String(v));b.disabled=!!(f.off&&f.off(b.dataset.v,S));if(b.disabled)b.title="Нет файла движка в папке core"});break;
+      case "text":case "num":case "area":var want=v==null?"":String(v);if(document.activeElement!==x.ctl&&x.ctl.value!==want)x.ctl.value=want;break;
+      case "theme":x.ctl.querySelectorAll("button").forEach(function(b){b.classList.toggle("on",b.dataset.themePick===document.documentElement.dataset.theme)});break;
+      }
+    });
+    var nt=$("snote");
+    if(nt)nt.textContent=s.tun&&!S.elevated?"Сейчас приложение запущено без прав администратора: TUN заработает после кнопки «Перезапустить» на главной.":"";
+  }
+
+  // ---- Statistics ----
+  var statsT=0,statsBusy=false;
+  function plural(n,a,b,c){var m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c}
+  function dur(sec){sec=Math.max(0,Math.floor(sec));var h=Math.floor(sec/3600),m=Math.floor(sec%3600/60);return h?h+" ч "+m+" мин":m?m+" мин":sec+" с"}
+  function both(d){return "↓ "+fmtBytes(d.down||0)+" · ↑ "+fmtBytes(d.up||0)}
+  function loadStats(){if(statsBusy||!api.stats)return;statsBusy=true;
+    Promise.resolve(api.stats()).then(function(v){statsBusy=false;if(v&&page==="stats")renderStats(v)}).catch(function(){statsBusy=false})}
+  function renderStats(v){
+    var on=S&&S.conn.status==="on";
+    $("kNow").textContent=on?fmtBytes(v.sessDown+v.sessUp):"—";
+    $("kNowS").textContent=on?both({down:v.sessDown,up:v.sessUp})+(v.sessSince?" · "+dur(Date.now()/1000-v.sessSince):""):"не подключено";
+    $("kToday").textContent=fmtBytes(v.today.down+v.today.up);$("kTodayS").textContent=both(v.today);
+    $("kMonth").textContent=fmtBytes(v.month.down+v.month.up);$("kMonthS").textContent=both(v.month);
+    $("kTotal").textContent=fmtBytes(v.totalDown+v.totalUp);
+    $("kTotalS").textContent=v.sessions+" "+plural(v.sessions,"подключение","подключения","подключений")+" · "+dur(v.seconds);
+    drawSpeed(v.speed||[]);
+    // days
+    var map={};(v.days||[]).forEach(function(d){map[d.day]=d});
+    var list=[],max=1;for(var i=29;i>=0;i--){var dt=new Date();dt.setDate(dt.getDate()-i);
+      var k=dt.getFullYear()+"-"+pad(dt.getMonth()+1)+"-"+pad(dt.getDate()),d=map[k]||{down:0,up:0};list.push([dt,d]);max=Math.max(max,d.down+d.up)}
+    var dk=JSON.stringify(list.map(function(x){return x[1].down+x[1].up}));
+    if(dk!==renderStats.dk){renderStats.dk=dk;var de=$("days");de.innerHTML="";
+      list.forEach(function(x){var b=document.createElement("div"),t=x[1].down+x[1].up;
+        if(t){b.style.height=Math.max(4,t/max*100)+"%"}else b.className="z";
+        b.title=pad(x[0].getDate())+"."+pad(x[0].getMonth()+1)+": "+fmtBytes(t)+(t?" ("+both(x[1])+")":"");de.appendChild(b)});
+      $("daysx").innerHTML="<span>"+pad(list[0][0].getDate())+"."+pad(list[0][0].getMonth()+1)+"</span><span>сегодня</span>"}
+    // servers
+    var sk=JSON.stringify(v.servers||[]);
+    if(sk!==renderStats.sk){renderStats.sk=sk;var se=$("srvStats");se.innerHTML="";
+      if(!(v.servers||[]).length)se.innerHTML='<div class="empty">Пока пусто: здесь появятся серверы, через которые вы подключались.</div>';
+      (v.servers||[]).forEach(function(s){var r=document.createElement("div");r.className="srow";
+        r.appendChild(flagEl({country:s.country,kind:s.country==="AUTO"?"warp":"link"}));
+        var b=document.createElement("b");b.textContent=clean(s.name);r.appendChild(b);
+        var sp=document.createElement("span");sp.textContent=fmtBytes(s.down+s.up)+" · "+dur(s.seconds);r.appendChild(sp);se.appendChild(r)})}
+    // connections
+    var ce=$("conns"),cs=v.conns||[];
+    $("connN").textContent=on?"· "+v.connCount:"";
+    var html='<div class="tr h"><span>Сайт</span><span>Маршрут</span><span class="p">Программа</span><span class="n">Трафик</span></div>';
+    if(!cs.length)html+='<div class="empty">'+(on?"Сейчас нет открытых соединений":"Подключитесь, чтобы видеть соединения")+'</div>';
+    cs.slice(0,200).forEach(function(x){var cls=x.route==="VPN"?"vpn":x.route==="Блок"?"blk":"";
+      html+='<div class="tr"><span title="'+esc(x.host)+'">'+esc(x.host)+' <small class="hint">'+esc(x.network||"")+'</small></span><span><i class="badge '+cls+'">'+esc(x.route)+'</i></span><span class="p" title="'+esc(x.process||"")+'">'+esc((x.process||"").split(/[\\/]/).pop()||"—")+'</span><span class="n">↓ '+fmtBytes(x.down)+' ↑ '+fmtBytes(x.up)+'</span></div>'});
+    var keep=ce.scrollTop;ce.innerHTML=html;ce.scrollTop=keep;
+  }
+  function drawSpeed(arr){
+    var cv2=$("spd"),d=Math.min(window.devicePixelRatio||1,2),w=cv2.clientWidth,h=cv2.clientHeight;if(!w||!h)return;
+    cv2.width=w*d;cv2.height=h*d;var g=cv2.getContext("2d");g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,w,h);
+    var css=getComputedStyle(document.documentElement),acc=css.getPropertyValue("--accent").trim(),mut=css.getPropertyValue("--muted").trim();
+    var n=120,max=1024;arr.forEach(function(p){max=Math.max(max,p[0],p[1])});
+    g.strokeStyle="rgba(255,255,255,.07)";g.lineWidth=1;for(var i=1;i<4;i++){var y=Math.round(h*i/4)+.5;g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}
+    function line(idx,color,fill){if(arr.length<2)return;var off=n-arr.length;g.beginPath();
+      arr.forEach(function(p,i){var x=(off+i)/(n-1)*w,y=h-3-(p[idx]/max)*(h-18);if(i)g.lineTo(x,y);else g.moveTo(x,y)});
+      g.strokeStyle=color;g.lineWidth=2;g.lineJoin="round";g.stroke();
+      if(fill){g.lineTo(w,h);g.lineTo(off/(n-1)*w,h);g.closePath();g.globalAlpha=.16;g.fillStyle=color;g.fill();g.globalAlpha=1}}
+    line(1,mut,false);line(0,acc,true);
+    g.fillStyle=mut;g.font="11px Manrope,Segoe UI,sans-serif";g.fillText(fmtSpeed(max),4,12);
+    var last=arr[arr.length-1]||[0,0];$("spdD").textContent=fmtSpeed(last[0]);$("spdU").textContent=fmtSpeed(last[1]);
+  }
+
+  // ---- Logs and the check of every mode ----
+  var LOGS=[["connect","Подключение"],["core","sing-box"],["xray","Xray"],["xraytun","Xray TUN"],["tun2proxy","tun2proxy"],["masque","WARP MASQUE"],["diag","Отчёт проверки"]];
+  var logName="connect",logT=0,logBusy=false,logText=null,diagKey="";
+  LOGS.forEach(function(l){var b=document.createElement("button");b.type="button";b.textContent=l[1];b.dataset.l=l[0];if(l[0]===logName)b.className="on";
+    b.addEventListener("click",function(){logName=l[0];logText=null;document.querySelectorAll("#ltabs button").forEach(function(x){x.classList.toggle("on",x===b)});loadLog(true)});$("ltabs").appendChild(b)});
+  function loadLog(force){if(logBusy||!api.log)return;logBusy=true;var want=logName;
+    Promise.resolve(api.log(want)).then(function(v){logBusy=false;if(want!==logName)return;var t=(v&&v.text)||"";
+      if(t!==logText){var box=$("logbox"),atEnd=box.scrollTop+box.clientHeight>=box.scrollHeight-40;logText=t;box.textContent=t;if(atEnd||force)box.scrollTop=box.scrollHeight}
+    }).catch(function(){logBusy=false})}
+  function renderDiag(){
+    var d=S.diag||{},run=!!d.running,res=d.results||[];
+    $("diagBtn").disabled=run;$("diagBtn").textContent=run?"Идёт проверка…":"Проверить все режимы";
+    $("diagAdm").hidden=run||!!S.elevated;
+    var ok=res.filter(function(r){return r.ok}).length,tried=res.filter(function(r){return !r.skipped}).length;
+    $("diagStep").textContent=run?(d.step||"")+(d.total?" · "+Math.min(d.done+1,d.total)+" из "+d.total:""):
+      res.length?"Работают "+ok+" из "+tried+(tried<res.length?", пропущено "+(res.length-tried):""):(S.elevated?"":"Без прав администратора режимы TUN будут пропущены");
+    $("diagBar").hidden=!run;$("diagFill").style.width=(d.total?d.done/d.total*100:0)+"%";
+    var key=JSON.stringify(res);if(key===diagKey)return;diagKey=key;
+    var el=$("diagRes");el.innerHTML="";
+    res.forEach(function(r){var x=document.createElement("div");x.className="dr "+(r.skipped?"skip":r.ok?"ok":"bad");
+      x.innerHTML="<i>"+(r.skipped?"–":r.ok?"✓":"✕")+"</i><div><b>"+esc(r.title)+(r.secs?' <span class="hint">'+esc(r.secs)+" с</span>":"")+"</b><small>"+esc(r.detail||"")+"</small></div>";el.appendChild(x)});
+    if(!run&&res.length&&logName==="diag"){logText=null;loadLog(true)}
+  }
+
+  // Background: "Океан и пламя" — navy base with a diagonal paint swirl (ocean blue → white → orange flame).
+  var cv=$("bg"),ctx=cv.getContext("2d"),reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+  function hex(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+  function mix(st,t){for(var i=1;i<st.length;i++){if(t<=st[i][0]){var a=st[i-1],b=st[i],k=(t-a[0])/(b[0]-a[0]),A=hex(a[1]),B=hex(b[1]);return[A[0]+(B[0]-A[0])*k|0,A[1]+(B[1]-A[1])*k|0,A[2]+(B[2]-A[2])*k|0]}}return hex(st[st.length-1][1])}
+  // "Океан и пламя" — navy base with a diagonal paint swirl.
+  function paintOcean(w,h){
+    ctx.fillStyle="#0f2035";ctx.fillRect(0,0,w,h);
+    var r=rng(7);
+    var stops=[[0,"#163552"],[.16,"#2e6a8e"],[.3,"#9fc0d4"],[.38,"#f2efe9"],[.48,"#f9d9b0"],[.58,"#ff9a2e"],[.72,"#ff6a14"],[.84,"#d9361a"],[.92,"#2a5878"],[1,"#163552"]];
+    var N=150,band=h*.7;
+    for(var i=0;i<N;i++){
+      var t=i/(N-1),o=(t-.5)*band,c=mix(stops,t),j=(r()-.5)*22;
+      ctx.strokeStyle="rgba("+Math.min(255,c[0]+j)+","+Math.min(255,c[1]+j)+","+Math.min(255,c[2]+j)+",.85)";
+      ctx.lineWidth=2.4+r()*1.6;
+      ctx.beginPath();ctx.moveTo(-60,h*1.08+o*1.15);
+      ctx.bezierCurveTo(w*.2,h*.1+o,w*.62,h*1.25+o*.6,w+60,h*.08+o*.85);ctx.stroke();
+    }
+    for(var dd=0;dd<60;dd++){ctx.fillStyle=r()<.65?"rgba(255,120,30,.8)":"rgba(240,236,230,.75)";ctx.beginPath();ctx.arc(r()*w,r()*h,.6+Math.pow(r(),3)*3.5,0,6.283);ctx.fill()}
+    var v=ctx.createRadialGradient(w*.4,h*.5,0,w*.4,h*.5,w*.8);v.addColorStop(0,"rgba(15,32,53,0)");v.addColorStop(1,"rgba(6,14,24,.55)");ctx.fillStyle=v;ctx.fillRect(0,0,w,h);
+  }
+  // "Красный туз" — deep black with red and black playing cards at the edges.
+  function paintCards(w,h){
+    var g=ctx.createRadialGradient(w*.75,h*.35,0,w*.75,h*.35,w*.85);g.addColorStop(0,"#1b1b1c");g.addColorStop(1,"#030303");ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+    function tile(dot,bg){var t=document.createElement("canvas");t.width=t.height=6;var c=t.getContext("2d");c.fillStyle=bg;c.fillRect(0,0,6,6);c.fillStyle=dot;c.beginPath();c.arc(3,3,1.2,0,6.283);c.fill();c.fillStyle="rgba(255,255,255,.08)";c.beginPath();c.arc(2.5,2.4,.5,0,6.283);c.fill();return ctx.createPattern(t,"repeat")}
+    function card(cx,cy,cw,ch,rot,base,dot,edge){
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(rot);
+      var x=-cw/2,y=-ch/2,rr=Math.min(cw,ch)*.06;ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+cw,y,x+cw,y+ch,rr);ctx.arcTo(x+cw,y+ch,x,y+ch,rr);ctx.arcTo(x,y+ch,x,y,rr);ctx.arcTo(x,y,x+cw,y,rr);ctx.closePath();
+      ctx.shadowColor="rgba(0,0,0,.8)";ctx.shadowBlur=50;ctx.shadowOffsetX=-14;ctx.shadowOffsetY=10;ctx.fillStyle=base;ctx.fill();ctx.shadowColor="transparent";
+      ctx.save();ctx.clip();ctx.fillStyle=tile(dot,base);ctx.fillRect(x,y,cw,ch);
+      var sh=ctx.createLinearGradient(x,y,x+cw,y+ch);sh.addColorStop(0,"rgba(255,255,255,.1)");sh.addColorStop(.45,"rgba(255,255,255,0)");sh.addColorStop(1,"rgba(0,0,0,.35)");ctx.fillStyle=sh;ctx.fillRect(x,y,cw,ch);ctx.restore();
+      ctx.strokeStyle=edge;ctx.lineWidth=1.2;ctx.stroke();ctx.restore();
+    }
+    card(w*.1,h*.94,h*.7,h*1.0,.42,"#e8132f","rgba(110,0,16,.55)","rgba(255,120,140,.5)");
+    card(w*.9,h*.4,h*.78,h*1.1,-.3,"#e8132f","rgba(110,0,16,.55)","rgba(255,120,140,.5)");
+    card(w*1.04,h*.56,h*.78,h*1.1,-.3,"#0d0d0e","rgba(255,255,255,.07)","rgba(255,255,255,.12)");
+  }
+  function paint(){
+    var d=Math.min(window.devicePixelRatio||1,2),w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;cv.width=w*d;cv.height=h*d;ctx.setTransform(d,0,0,d,0,0);
+    if(document.documentElement.dataset.theme==="ocean")paintOcean(w,h);else paintCards(w,h);
+  }
+  var raf=0;function later(){cancelAnimationFrame(raf);raf=requestAnimationFrame(paint)}
+  if(window.ResizeObserver)new ResizeObserver(later).observe(cv);else window.addEventListener("resize",later);
+  paint();
+
+  // Theme switch (Красный туз / Океан и пламя), remembered on this computer.
+  function getTheme(){try{return localStorage.getItem("pvTheme")||"ace"}catch(e){return "ace"}}
+  function applyTheme(t){
+    if(t!=="ocean")t="ace";
+    document.documentElement.dataset.theme=t;
+    try{localStorage.setItem("pvTheme",t)}catch(e){}
+    document.querySelectorAll("[data-theme-pick]").forEach(function(b){b.classList.toggle("on",b.dataset.themePick===t)});
+    if(api.theme)try{api.theme(t)}catch(e){} // the window frame takes the theme's colour too
+    later();
+  }
+  applyTheme(getTheme());
+
+  document.addEventListener("contextmenu",function(e){if(e.target.tagName!=="TEXTAREA")e.preventDefault()});
+
+
+  // ---- Game draft: Memoji-style people. The avatar lives in settings.game (JSON); gang and crystals are demo data ----
+  var GEM='<svg class="gem" viewBox="0 0 24 24" fill="#ff5068"><path d="M6 3h12l4 6-10 12L2 9z"/></svg>';
+  // demo friends: [name, preset, status, crystals]
+  var FRIENDS=[["Аня","coat","в сети · 21 день подряд",1240],["Артём","bomber","был вчера · 6 дней подряд",760],["Макс","muscle","в сети · 4 дня подряд",540],["Лиза","pink","приглашена сегодня · новичок",200],["Ника","dress","в сети · 2 дня подряд",150],["Денис","blazer","был сегодня · новичок",90]];
+  function preset(n){return AV_PRESETS.filter(function(p){return p.key===n})[0]||AV_PRESETS[0]}
+  function lookKey(o){var x=avNormalize(o);delete x.name;return JSON.stringify(x)}
+  // a friend who looks exactly like your own hero steps aside for the next one
+  function friendsOf(n,me){var k=lookKey(me);return FRIENDS.filter(function(f){return lookKey(preset(f[1]))!==k}).slice(0,n)}
+  function friendList(n,me){return friendsOf(n,me).map(function(f){return preset(f[1])})}
+  function game(){var g={};try{g=JSON.parse(S.settings.game||"{}")||{}}catch(e){g={}}
+    // v6 (0.15.0): the old heroes are gone; everyone starts once with the first Meshy person walking, alone on the button
+    var fresh=(g.v||0)<7,me=avNormalize(fresh?preset("ninja"):g.me);if(me.model!=="meshy")me=avNormalize(preset("ninja"));
+    return {v:7,me:me,mode:"body",friends:4,crowd:fresh?false:g.crowd!==false,move:MOVES[g.move]&&!fresh?g.move:"walk"}}
+  var MOVES={walk:"гуляет",run:"бегает",idle:"стоит рядом"};
+  function saveGame(g){return setOpt("game",JSON.stringify(g))}
+  function heroName(o){return o.name||"Ваш герой"}
+  var powerKey="",powerPlain=$("power").innerHTML,popNext=-1;
+  // real 3D people (three.js, WebGL); without WebGL the flat SVG people stay
+  var G3=!!(window.Hero3D&&Hero3D.ok),homeStage=null,editStage=null,gangStage=null,snapN=0;
+  function stage3(el,s,opt){if(!s)s=new Hero3D.Stage(opt);if(s.canvas.parentNode!==el){el.innerHTML="";el.appendChild(s.canvas)}return s}
+  function renderHero(c,on,busy){
+    var st=S.settings,vis=!!st.heroButton,state=busy?"wait":on?"on":"off",g=game();
+    var key=vis?JSON.stringify([g,!!st.heroHop,state]):"plain";
+    // a friend who joined while you were elsewhere pops in when you come back home
+    if(key!==powerKey&&(page==="home"||!powerKey)){powerKey=key;var p=$("power");p.classList.toggle("stage",vis);p.classList.toggle("m-head",vis&&g.mode==="head");
+      p.classList.toggle("g3",vis&&G3);
+      if(vis&&G3){homeStage=stage3(p,homeStage,{platform:true});homeStage.set(g.me,g.crowd?friendList(g.friends,g.me):[],state,{hop:!!st.heroHop,pop:popNext,move:g.move})}
+      else{p.innerHTML=vis?avatarScene(g.me,g.crowd?friendList(g.friends,g.me):[],{mode:g.mode,state:state,pop:popNext}):powerPlain;
+        if(vis&&!st.heroHop)p.firstChild.classList.add("nohop")}
+      if(page==="home")popNext=-1}
+    $("crowd").hidden=!vis;document.querySelectorAll("#crowd button,#gCrowd button").forEach(function(b){b.classList.toggle("on",(b.dataset.c==="1")===g.crowd)});
+    $("moves").hidden=true; // the standing figures do not walk or run (0.17.1)
+    document.querySelectorAll("#moves button,#hMoves button").forEach(function(b){b.classList.toggle("on",b.dataset.m===g.move)});
+    if(vis&&!busy&&!(S.diag&&S.diag.running)&&c.status!=="error"){var n=heroName(g.me);
+      $("hint").textContent=on?(g.crowd?"Все радуются":n+" "+(G3?MOVES[g.move]:"радуется"))+": вы под защитой"+(c.ip?" · IP "+c.ip+(c.loc&&C[c.loc]?", "+C[c.loc][0]:""):""):n+" спит. Нажмите на героя, чтобы включить VPN"}
+  }
+
+  // «Мой герой»: the editor works on a draft; «Сохранить героя» saves it
+  var draft=null,dMode="body",hState="on",heroBuilt=false,hCat="age",tryOn=null,lvl={n:1,p:0,left:3,xp:0},lvlT=0,warned=false;
+  var CATS=[["age","Возраст"],["face","Лицо"],["hair","Причёска"],["eyes","Глаза"],["beard","Борода"],["acc","Очки и серьги"],["hat","Шапка"],["top","Верх"],["bottom","Низ"],["shoes","Обувь"],["extra","Особое"]];
+  function L(list){return list.map(function(x){return {v:x[0],l:x[1],p:x[2]||0,lv:x[3]||0}})}
+  function groups(c){var A=AV;
+    switch(c){
+      case "age":return [{t:"Возраст",k:"age",view:"body",list:L(draft&&draft.model==="girl3"?A.ages.filter(function(a){return a[0]!=="adult"}):A.ages)},{t:"Фигура",k:"build",view:"body",list:L(A.builds)}];
+      case "face":return [{t:"Цвет кожи",k:"skin",colors:A.skins},{t:"Форма лица",k:"face",view:"head",list:L(A.faces)},{t:"Веснушки",k:"freckles",view:"head",list:[{v:false,l:"Нет"},{v:true,l:"Есть"}]}];
+      case "hair":return [{t:"Причёска",k:"hair",view:"head",list:L(A.hairs)},{t:"Цвет волос",k:"hairColor",colors:A.hairColors,paid:9}];
+      case "eyes":return [{t:"Глаза",k:"eyes",view:"head",list:L(A.eyes)},{t:"Цвет глаз",k:"eyeColor",colors:A.eyeColors,paid:6},{t:"Брови",k:"brows",view:"head",list:L(A.brows)}];
+      case "beard":return draft.age==="kid"?[{t:"У детей бороды нет: выберите возраст от 11 лет",k:"",list:[]}]:[{t:"Борода и усы",k:"beard",view:"head",list:L(A.beards)}];
+      case "acc":return [{t:"Очки",k:"glasses",view:"head",list:L(A.glasses)},{t:"Серьги",k:"earrings",view:"head",list:[{v:false,l:"Нет"},{v:true,l:"Золотые",p:90}]},{t:"Цвет губ",k:"lips",colors:A.lips}];
+      case "hat":return [{t:"Головной убор",k:"hat",view:"head",list:L(A.hats)},{t:"Цвет шапки и мелочей",k:"hatColor",colors:A.colors}];
+      case "top":return [{t:"Верх",k:"top",view:"body",list:L(A.tops)},{t:"Цвет",k:"topColor",colors:A.colors}];
+      case "bottom":return [{t:"Низ",k:"bottom",view:"body",list:L(A.bottoms)},{t:"Цвет",k:"bottomColor",colors:A.colors}];
+      case "shoes":return [{t:"Обувь",k:"shoes",view:"body",list:L(A.shoes)},{t:"Цвет",k:"shoeColor",colors:A.colors}];
+      case "extra":return [{t:"Особые вещи",k:"extra",view:"body",list:L(A.extras)}];
+    }return []}
+  function priceOf(o){var t=0,A=AV;[["glasses",A.glasses],["hat",A.hats],["top",A.tops],["bottom",A.bottoms],["shoes",A.shoes],["extra",A.extras]].forEach(function(x){
+      var it=x[1].filter(function(i){return i[0]===o[x[0]]})[0];if(it)t+=it[2]||0});
+    if(o.earrings)t+=90;if(A.hairColors.indexOf(o.hairColor)>8)t+=100;if(A.eyeColors.indexOf(o.eyeColor)>5)t+=100;return t}
+  function thumb(o,view){
+    if(!G3)return avatarSVG(o,{mode:view,state:"on",still:true,fx:false});
+    var u=Hero3D.snapCached(o,view);if(u)return '<img class="h3" alt="" src="'+u+'">';
+    var id="h3s"+(++snapN);
+    Hero3D.snap(o,view,function(url){var im=document.getElementById(id);if(im&&url)im.src=url},function(){return !!document.getElementById(id)});
+    return '<img class="h3" alt="" id="'+id+'">'}
+  function setDraft(k,v){draft[k]=v;draft=avNormalize(draft);renderHeroPage()}
+  function levelOf(sec){var h=(sec||0)/3600,n=Math.floor(Math.sqrt(h/3))+1,a=3*(n-1)*(n-1),b=3*n*n;return {n:n,p:Math.min(1,(h-a)/(b-a)),left:Math.max(1,Math.ceil(b-h)),xp:Math.floor(h*10)}}
+  function loadLevel(){if(!api.stats||Date.now()-lvlT<60000)return;lvlT=Date.now();
+    Promise.resolve(api.stats()).then(function(v){if(!v)return;lvl=levelOf(v.seconds);heroKey="";if(page==="hero")renderHeroPage()}).catch(function(){})}
+  function buildHeroPage(){
+    heroBuilt=true;
+    AV_PRESETS.forEach(function(p,i){var b=document.createElement("button");b.type="button";b.dataset.i=i;
+      b.innerHTML='<span class="v">'+thumb(p,"body")+"</span>";b.setAttribute("aria-label","Готовый герой "+(i+1));
+      b.addEventListener("click",function(){var nm=draft.name;draft=avNormalize(p);if(nm)draft.name=nm;renderHeroPage()});$("hPick").appendChild(b)});
+    CATS.forEach(function(c){var b=document.createElement("button");b.type="button";b.dataset.c=c[0];b.textContent=c[1];
+      b.addEventListener("click",function(){hCat=c[0];renderHeroPage()});$("hCats").appendChild(b)});
+    document.querySelectorAll("#hState button").forEach(function(b){b.addEventListener("click",function(){hState=b.dataset.st;renderHeroPage()})});
+    $("hName").addEventListener("input",function(){draft.name=$("hName").value.slice(0,24)});
+    $("hRand").addEventListener("click",function(){draft=avNormalize(AV_PRESETS[Math.floor(Math.random()*AV_PRESETS.length)]);$("hName").value="";renderHeroPage()});
+    // the Meshy people come dressed: no editor for them
+    $("hCats").parentNode.style.display="none";
+    $("hUndo").addEventListener("click",function(){var g=game();draft=g.me;dMode=g.mode;$("hName").value=draft.name||"";renderHeroPage()});
+    $("hSave").addEventListener("click",function(){var g=game(),cost=priceOf(draft)-priceOf(g.me);g.me=avNormalize(draft);if(draft.name)g.me.name=draft.name;g.mode=dMode;
+      saveGame(g).then(function(){if(!S.settings.heroButton)return setOpt("heroButton",true)}).then(function(){
+        toast(heroName(g.me)+" теперь на кнопке"+(cost>0?". В черновике бесплатно, потом это будет стоить "+cost+" кристаллов":""))})});
+    var flip=function(){setOpt("heroButton",!S.settings.heroButton)};
+    $("hBtnSw").addEventListener("click",flip);$("hBtnSw").addEventListener("keydown",function(e){if(e.key===" "||e.key==="Enter"){e.preventDefault();flip()}});
+  }
+  function optsHTML(gr){
+    if(gr.colors)return '<div class="sw">'+gr.colors.map(function(c,i){return '<button type="button" data-k="'+gr.k+'" data-v="'+c+'"'+(gr.paid&&i>=gr.paid?' class="paid" title="100 кристаллов"':"")+' style="background:'+(c||"conic-gradient(#d9826f,#c9475a,#a8326e,#d9826f)")+'"'+(c?"":' title="Свой цвет"')+'></button>'}).join("")+"</div>";
+    return '<div class="opts'+(gr.view==="body"?" tall":"")+'">'+gr.list.map(function(it){var o=avNormalize(draft);o[gr.k]=it.v;if(draft.name)o.name=draft.name;
+      return '<button type="button" data-k="'+gr.k+'" data-v="'+esc(String(it.v))+'"><span class="v">'+thumb(o,gr.view)+"</span>"+esc(it.l)+
+        (it.p?'<span class="pr">'+it.p+GEM+"</span>":"")+(it.lv>lvl.n?'<span class="lk">ур. '+it.lv+"</span>":"")+"</button>"}).join("")+"</div>"}
+  var heroKey="";
+  function renderHeroPage(){
+    if(!heroBuilt)buildHeroPage();
+    if(!draft){var g=game();draft=g.me;dMode=g.mode;if(tryOn){for(var k in tryOn)draft[k]=tryOn[k];hCat=tryOn.extra?"extra":tryOn.hat?"hat":hCat;tryOn=null}$("hName").value=draft.name||""}
+    loadLevel();
+    var look=avNormalize(draft),mv=game().move,key=JSON.stringify([look,dMode,hState,hCat,lvl.n,mv]);
+    if(key!==heroKey){heroKey=key;
+      if(G3){editStage=stage3($("hvBody"),editStage,{platform:true,drag:true});editStage.set(look,[],hState,{move:mv})}
+      else $("hvBody").innerHTML=avatarSVG(look,{mode:"body",state:hState});
+      document.querySelectorAll("#hState button").forEach(function(b){b.classList.toggle("on",b.dataset.st===hState)});
+      document.querySelectorAll("#hCats button").forEach(function(b){b.classList.toggle("on",b.dataset.c===hCat)});
+      document.querySelectorAll("#hPick button").forEach(function(b){var p=avNormalize(AV_PRESETS[b.dataset.i]);delete p.name;var d=avNormalize(look);delete d.name;b.classList.toggle("on",JSON.stringify(p)===JSON.stringify(d))});
+      $("hOpts").innerHTML=groups(hCat).map(function(gr){return '<div class="hgrp"><h4>'+esc(gr.t)+"</h4>"+(gr.k?optsHTML(gr):"")+"</div>"}).join("");
+      $("hOpts").querySelectorAll("button[data-k]").forEach(function(b){var k=b.dataset.k,v=b.dataset.v,cur=look[k];
+        var val=v==="true"?true:v==="false"?false:v;b.classList.toggle("on",cur===val);
+        b.addEventListener("click",function(){setDraft(k,val);if(!warned&&b.querySelector(".pr,.lk")){warned=true;toast("В черновике всё бесплатно и открыто: примеряйте что угодно")}})});
+      $("hLvl").textContent="Уровень "+lvl.n;$("hXp").textContent=lvl.xp+" опыта · ещё "+lvl.left+" ч до "+(lvl.n+1)+"-го";$("hXpBar").style.width=Math.round(lvl.p*100)+"%";
+    }
+    $("hBtnSw").classList.toggle("on",!!S.settings.heroButton);$("hBtnSw").setAttribute("aria-checked",!!S.settings.heroButton);
+  }
+
+  // «Банда»: your hero with friends on one stage; friends are examples until accounts exist
+  var gangBuilt=false,gangKey="",gPop=-1,shopKey="";
+  var CREST='<svg viewBox="0 0 60 68"><path d="M30 2L56 10V32C56 50 44 61 30 66C16 61 4 50 4 32V10Z" fill="#e3262f" stroke="#ffd1d6" stroke-width="2"/><path d="M30 16C36 25 46 30 46 39C46 45 41 48 36 46C34 45 33 44 32 43L34 52H26L28 43C27 44 26 45 24 46C19 48 14 45 14 39C14 30 24 25 30 16Z" fill="#fff"/></svg>';
+  function buildGang(){
+    gangBuilt=true;$("gCrest").innerHTML=CREST;
+    [["+10",1],["+15",1],["+20",1],["+25",2],["+30",0],["+40",0],["сундук",0]].forEach(function(x,i){var d=document.createElement("div");
+      d.className=x[1]===1?"ok":x[1]===2?"now":"";d.innerHTML="День "+(i+1)+"<b>"+x[0]+"</b>";$("sDays").appendChild(d)});
+    [["1 ГБ",50],["10 ГБ",400],["Неделя без лимита",700],["Заморозка серии",150]].forEach(function(x){
+      var b=document.createElement("button");b.type="button";b.setAttribute("data-demo","");b.innerHTML="<b>"+esc(x[0])+"</b><small>"+x[1]+GEM+"</small>";$("sBuy").appendChild(b)});
+    document.querySelectorAll("[data-demo]").forEach(function(b){b.addEventListener("click",function(){toast("Это пример: заработает вместе с аккаунтами")})});
+  }
+  function renderGang(){
+    var g=game(),key=JSON.stringify(g);if(key===gangKey)return;gangKey=key;
+    if(G3){gangStage=stage3($("gStage"),gangStage,{platform:true});gangStage.set(g.me,g.crowd?friendList(g.friends,g.me):[],"on",{pop:gPop,move:g.move})}
+    else $("gStage").innerHTML=avatarScene(g.me,g.crowd?friendList(g.friends,g.me):[],{mode:"body",state:"on",pop:gPop});gPop=-1;
+    $("gCount").textContent="Участники · "+(g.friends+1)+" из 20";
+    var rows=[["Вы",g.me,"в сети · 9 дней подряд",980,true]].concat(friendsOf(g.friends,g.me).map(function(f){return [f[0],preset(f[1]),f[2],f[3]]}));
+    rows.sort(function(a,b){return b[3]-a[3]});
+    $("gMembers").innerHTML=rows.map(function(m,i){return '<div class="mem'+(m[4]?" me":"")+'"><b style="width:16px;color:var(--muted)">'+(i+1)+"</b><span class='av'>"+thumb(m[1],"head")+
+      "</span><span class='nm'><b>"+esc(m[0])+(m[4]&&g.me.name?" · "+esc(g.me.name):"")+"</b><small>"+esc(m[2])+"</small></span><span class='pts'>"+m[3].toLocaleString("ru-RU")+GEM+"</span></div>"}).join("")+
+      "";
+  }
+  // «Кристаллы»: try rare things on your own hero
+  var TRY=[[{extra:"cape"},"Плащ героя",600,6],[{extra:"wings"},"Крылья",1000,10],[{hat:"crown"},"Корона",500,8],[{hat:"cowboy",hatColor:"#8a5a32"},"Ковбойская шляпа",200,4],[{glasses:"star"},"Очки-звёзды",150,2],[{hat:"ears",hatColor:"#1c1c22"},"Ушки",250,5]];
+  function renderShop(){
+    var me=game().me,key=JSON.stringify(me);if(key===shopKey)return;shopKey=key;
+    $("sTry").innerHTML="";
+    TRY.forEach(function(t){var o=avNormalize(me);for(var k in t[0])o[k]=t[0][k];var b=document.createElement("button");b.type="button";
+      b.innerHTML='<span class="v">'+thumb(o,"body")+"</span><b>"+esc(t[1])+"</b><small>"+t[2]+GEM+" · ур. "+t[3]+"</small>";
+      b.addEventListener("click",function(){tryOn=t[0];draft=null;show("hero");toast("Примеряем: "+t[1]+". Понравится — сохраните героя")});$("sTry").appendChild(b)});
+  }
+  document.querySelectorAll("#crowd button,#gCrowd button").forEach(function(b){b.addEventListener("click",function(){var g=game(),c=b.dataset.c==="1";if(g.crowd===c)return;
+    g.crowd=c;if(c)popNext=gPop=0;saveGame(g)})});
+  // what the hero does on the button while the VPN is on
+  document.querySelectorAll("#moves button,#hMoves button").forEach(function(b){b.addEventListener("click",function(e){e.stopPropagation();var g=game();
+    if(b.parentNode.id==="hMoves"&&hState!=="on"){hState="on";heroKey=""}
+    if(g.move===b.dataset.m){if(b.parentNode.id==="hMoves")renderHeroPage();return}g.move=b.dataset.m;saveGame(g).then(function(){if(page==="hero")renderHeroPage()})})});
+  function renderGame(){
+    if(page==="hero")renderHeroPage();else draft=null;
+    if(page!=="gang"&&page!=="shop")return;
+    if(!gangBuilt)buildGang();
+    if(page==="gang")renderGang();else renderShop();
+  }
+
+  function demo(){
+    var st={conn:{status:"off",serverId:"warp",since:0,error:"",busy:"",ip:"",loc:"",down:0,up:0,method:"",route:"",notice:"",noticeId:0},
+      servers:[{id:"warp",name:"Cloudflare WARP",country:"AUTO",kind:"warp",proto:"WireGuard",ping:28},
+        {id:"a",name:"🇳🇱 Amsterdam",country:"NL",kind:"link",proto:"VLESS",ping:42,subId:"s"},{id:"b",name:"🇩🇪 Frankfurt",country:"DE",kind:"link",proto:"VLESS",ping:51,subId:"s"},
+        {id:"c",name:"🇫🇮 Helsinki",country:"FI",kind:"link",proto:"Trojan",ping:37,subId:"s"},{id:"d",name:"🇺🇸 New York",country:"US",kind:"link",proto:"Hysteria2",ping:118,subId:"s"}],
+      subs:[{id:"s",title:"Пример подписки",url:"https://example.com/sub",count:4,upload:1e9,download:5e9,total:5e10,expire:Date.now()/1000+2592000,updated:Date.now()/1000}],
+      selected:"warp",elevated:false,version:"демо",engines:{singbox:true,xray:true,tun2proxy:true},diag:{running:false,results:[]},
+      settings:{autoConnect:false,autostart:false,startMinimized:false,autoReconnect:true,systemProxy:true,tun:false,tunEngine:"singbox",tunStack:"mixed",strictRoute:true,tunMtu:1500,
+        localDns:false,remoteDns:"https://1.1.1.1/dns-query",directDns:"",ipMode:"prefer_ipv4",globalProxy:true,bypassLan:true,directList:"",proxyList:"",blockList:"",appMode:"all",apps:"",sniff:true,
+        fragment:false,fragPackets:"tlshello",fragLength:"100-200",fragInterval:"10-20",noises:false,noiseType:"rand",noisePacket:"10-20",noiseDelay:"10-16",mux:false,muxConc:8,xudpConc:16,xudpQuic:"reject",
+        proxyPort:20808,allowLan:false,pingType:"tcp",pingUrl:"https://www.gstatic.com/generate_204",pingOnStart:true,sortByPing:false,subAutoUpdate:false,subInterval:12,subUpdateOnStart:false,subUserAgent:"",sendHwid:true,logLevel:"warning",heroButton:true,heroHop:true,game:""}};
+    var P=function(v){return Promise.resolve(v)},spd=[];
+    function route(){var s=st.settings,p=[];if(s.systemProxy)p.push("Прокси");if(s.tun)p.push("TUN ("+{singbox:"sing-box",xray:"Xray",tun2proxy:"tun2proxy"}[s.tunEngine]+")");return p.join(" + ")+(s.localDns?" · локальный DNS":"")}
+    return {state:function(){if(st.conn.status==="on"){st.conn.down=1.2e6+Math.random()*4e5;st.conn.up=2e5+Math.random()*1e5;st.conn.route=route()}return P(JSON.parse(JSON.stringify(st)))},
+      toggle:function(){if(st.conn.status==="off"||st.conn.status==="error"){st.conn.status="connecting";st.conn.busy="Подключаюсь…";setTimeout(function(){st.conn.status="on";st.conn.since=Date.now()/1000|0;st.conn.ip="104.28.1.1";st.conn.loc="NL"},1200)}else st.conn.status="off";return P()},
+      select:function(id){st.selected=id;return P()},add:function(){st.conn.notice="Демо: ссылка принята";st.conn.noticeId++;return P()},refreshSub:P,removeSub:P,removeServer:P,ping:P,
+      set:function(k,v){st.settings[k]=v;if(!st.settings.systemProxy&&!st.settings.tun)st.settings.systemProxy=true;return P()},openData:P,resetWarp:P,resetNetwork:P,resetSettings:P,theme:function(){},
+      restartAdmin:function(){st.elevated=true;return P()},refreshAll:function(){st.pinging=true;setTimeout(function(){st.pinging=false},1500);return P()},
+      importHapp:function(){st.conn.notice="Демо: подписки из Happ перенесены";st.conn.noticeId++;return P()},
+      stats:function(){var on=st.conn.status==="on";spd.push(on?[st.conn.down,st.conn.up]:[0,0]);if(spd.length>120)spd.shift();
+        var days=[];for(var i=20;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);if(i%4!==3)days.push({day:d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()),down:(i+3)*2.1e8,up:(i+3)*3e7})}
+        return P({today:days[days.length-1],month:{down:3.2e9,up:4.1e8},totalDown:2.1e10,totalUp:2.4e9,sessions:37,seconds:186400,days:days,
+          servers:[{name:"🇳🇱 Amsterdam",country:"NL",down:9e9,up:1e9,seconds:90000},{name:"Cloudflare WARP",country:"AUTO",down:4e9,up:5e8,seconds:40000}],
+          sessDown:on?5.4e7:0,sessUp:on?6e6:0,sessSince:st.conn.since,speed:spd.slice(),connCount:on?3:0,
+          conns:on?[{host:"www.youtube.com:443",network:"tcp",route:"VPN",process:"C:\\Program Files\\Google\\Chrome\\chrome.exe",down:3.1e7,up:1e6},{host:"claude.ai:443",network:"tcp",route:"Напрямую",process:"chrome.exe",down:2e5,up:4e4},{host:"ads.example.com:443",network:"tcp",route:"Блок",process:"chrome.exe",down:0,up:0}]:[]})},
+      resetStats:P,clearLogs:P,
+      log:function(n){return P({name:n,text:"2026-10-18 09:39:24  --- подключение: 🇳🇱 Amsterdam\n2026-10-18 09:39:25  🇳🇱 Amsterdam: подключено ("+route()+")\n"})},
+      diagnose:function(){st.diag={running:true,step:"Прокси",done:0,total:10,results:[]};var k=0,names=["Прокси","Прокси + локальный DNS","TUN sing-box, смешанный стек","TUN sing-box, системный стек","TUN sing-box, gVisor","TUN sing-box + локальный DNS","TUN Xray","TUN Xray + локальный DNS","TUN tun2proxy","TUN tun2proxy + локальный DNS"];
+        var t=setInterval(function(){st.diag.results.push({title:names[k],ok:k!==8,skipped:false,secs:"13",detail:k!==8?"адрес через VPN 104.28.1.1 NL; обычные программы идут через VPN; DNS работает":"не подключилось: tun2proxy остановился"});k++;st.diag.done=k;st.diag.step=names[k]||"";if(k>=10){clearInterval(t);st.diag.running=false}},400);return P()}};
+  }
+})();
+</script>
+</body>
+</html>

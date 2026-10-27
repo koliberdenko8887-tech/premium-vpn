@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108"><defs>
+    <radialGradient id="bg" cx="35%" cy="25%" r="85%">
+      <stop offset="0" stop-color="#2a2a2c"/>
+      <stop offset="1" stop-color="#050505"/>
+    </radialGradient>
+    <pattern id="dots" width="8" height="8" patternUnits="userSpaceOnUse">
+      <circle cx="4" cy="4" r="1.2" fill="#ffffff" fill-opacity=".07"/>
+    </pattern>
+    <radialGradient id="red" cx="38%" cy="26%" r="80%">
+      <stop offset="0" stop-color="#ff9aa7"/>
+      <stop offset=".45" stop-color="#f0173a"/>
+      <stop offset="1" stop-color="#9e0a20"/>
+    </radialGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".45"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+<rect width="258" height="258" fill="url(#dots)" transform="scale(.42)"/>
+<g transform="translate(54 54) scale(.36) translate(-128 -130)"><path d="M128 40 L200 66 V124 C200 170 170 202 128 220 C86 202 56 170 56 124 V66 Z" fill="url(#red)"/>
+  <path d="M128 40 L200 66 V124 C200 140 196 154 189 166 C160 140 100 110 62 96 L62 70 Z" fill="url(#gloss)"/>
+  <path d="M128 40 L200 66 V124 C200 170 170 202 128 220 C86 202 56 170 56 124 V66 Z" fill="none" stroke="#ff8d9c" stroke-opacity=".6" stroke-width="2.5"/>
+  <g fill="none" stroke="#0b0b0b" stroke-width="15" stroke-linecap="round">
+    <path d="M128 86 V128"/>
+    <path d="M102 101 A38 38 0 1 0 154 101"/>
+  </g>
+</g></svg>
