@@ -10,7 +10,10 @@
     ["gold","Чёрное золото","#0b0b0c",{on:"#d4a94a",off:"#2e2618",glow:"#f2c14e",ring:"#1a1408",env:.4,coat:.45,tint:"#e0b55a"}],
     ["lava","Лава","#0a0a0a",{on:"#ff6a00",off:"#3a2210",glow:"#ff5a00",ring:"#111111",env:.4,coat:.45,tint:"#ff7400"}],
     ["indigo","Индиго","#0d0a26",{on:"#7d5cff",off:"#241d4d",glow:"#8f72ff",ring:"#ffffff",env:.4,coat:.45,tint:"#8466ff"}]];
-  window.H3D_MAX_DPR=3; // sharp people on phone screens
+  window.H3D_MAX_DPR=3;window.H3D_SNAP_DPR=2; // sharp people on phone screens
+  var CREW={ace:"Красные тузы",ocean:"Огни океана",bordo:"Бордовая роса",gold:"Золотая гвардия",lava:"Лавовый поток",indigo:"Индиго"};
+  function route(s){var p=[];if(s.tun)p.push("TUN ("+({gvisor:"gVisor",system:"системный",mixed:"смешанный"}[s.tunStack]||"gVisor")+")");
+    if(s.systemProxy)p.push("Прокси 127.0.0.1:"+(s.proxyPort||20808));return p.join(" + ")+(s.localDns?" · локальный DNS":"")}
 
   // ---- store: servers, subscriptions, settings (localStorage, like 0.1.0) ----
   var DEF={autoConnect:false,autoReconnect:true,localDns:false,remoteDns:"https://1.1.1.1/dns-query",directDns:"",ipMode:"ipv4_only",
@@ -18,8 +21,8 @@
     fragment:false,fragPackets:"tlshello",fragLength:"100-200",fragInterval:"10-20",noises:false,noiseType:"rand",noisePacket:"10-20",noiseDelay:"10-16",
     mux:false,muxConc:8,xudpConc:16,xudpQuic:"reject",pingType:"tcp",pingUrl:"https://www.gstatic.com/generate_204",pingOnStart:true,sortByPing:false,
     subAutoUpdate:true,subInterval:12,subUpdateOnStart:false,subUserAgent:"",sendHwid:true,logLevel:"warning",heroButton:true,heroHop:true,game:"",
-    // the page reads these Windows modes; on the phone the VPN always takes the whole phone
-    systemProxy:false,tun:true,tunEngine:"singbox",tunStack:"gvisor",strictRoute:true,tunMtu:9000};
+    // TUN = Android's VPN for the whole phone, systemProxy = «Прокси» on 127.0.0.1; the page's «движок TUN» is the stack here
+    systemProxy:false,tun:true,tunEngine:"gvisor",tunStack:"gvisor",proxyPort:20808,allowLan:false,strictRoute:true,tunMtu:9000};
   // changes that do not need a new connection
   var QUIET={autoConnect:1,autoReconnect:1,pingType:1,pingUrl:1,pingOnStart:1,sortByPing:1,subAutoUpdate:1,subInterval:1,subUpdateOnStart:1,subUserAgent:1,sendHwid:1,heroButton:1,heroHop:1,game:1};
   function jp(t,d){try{var v=JSON.parse(t);return v==null?d:v}catch(e){return d}}
@@ -60,17 +63,18 @@
     var v=vs(),st=settings(),status={on:"on",connecting:"connecting",reconnecting:"reconnecting",weak:"reconnecting",error:"error"}[v.s]||"off";
     var c={status:status,serverId:v.id||db.selected,since:Math.floor((v.since||0)/1000),error:v.msg||"",
       busy:v.s==="connecting"?"Подключаюсь…":v.s==="weak"?"Сервер перестал отвечать, проверяю связь…":v.s==="reconnecting"?"Связь пропала, переподключаюсь…":"",
-      ip:v.ip||"",loc:v.loc||"",down:v.rd||0,up:v.ru||0,method:"",route:"",notice:notice,noticeId:noticeId};
+      ip:v.ip||"",loc:v.loc||"",down:v.rd||0,up:v.ru||0,method:"",route:route(st),notice:notice,noticeId:noticeId};
     var list=db.servers.length?db.servers.map(view):[NONE];
     quota();
     return Promise.resolve({conn:c,servers:list,subs:db.subs.map(function(x){return {id:x.id,title:x.title||"",url:x.url,count:db.servers.filter(function(s){return s.subId===x.id}).length,
         upload:x.upload||0,download:x.download||0,total:x.total||0,expire:x.expire||0,updated:x.updated||0}}),
-      selected:(current()||NONE).id,settings:st,version:VERSION,pinging:pinging,elevated:true,engines:{singbox:true},diag:{running:false,results:[]}});
+      selected:(current()||NONE).id,settings:st,version:VERSION,pinging:pinging,elevated:true,engines:{gvisor:true,system:true,mixed:true},diag:{running:false,results:[]}});
   };
   window.pvToggle=function(){var v=vs();if(active(v))PV.disconnect();else connect();return Promise.resolve()};
   window.pvSelect=function(id){if(id==="none"){go("subs");return Promise.resolve()}
     if(db.selected!==id){db.selected=id;save();if(active())connect()}return Promise.resolve()};
-  window.pvSet=function(k,v){db.settings[k]=v;save();if(k==="subUserAgent"||k==="sendHwid")env();if(!QUIET[k]&&active())reconnectSoon();return Promise.resolve()};
+  window.pvSet=function(k,v){if(k==="tunEngine"||k==="tunStack"){db.settings.tunEngine=db.settings.tunStack=v}else db.settings[k]=v;
+    if(db.settings.tun===false&&!db.settings.systemProxy)db.settings.systemProxy=true;save();if(k==="subUserAgent"||k==="sendHwid")env();if(!QUIET[k]&&active())reconnectSoon();return Promise.resolve()};
   window.pvResetSettings=function(){db.settings={game:db.settings.game||""};save();env();if(active())reconnectSoon();return Promise.resolve()};
 
   // ---- servers and subscriptions ----
@@ -130,7 +134,9 @@
   window.pvLog=function(n){return Promise.resolve({name:n,text:PV.log()})};
   window.pvClearLogs=function(){PV.clearLogs();return Promise.resolve()};
   window.pvTheme=function(t){var x=PV_THEMES.filter(function(q){return q[0]===t})[0];if(!x)return;
-    if(PV.theme)PV.theme(x[2]);if(window.Hero3D&&Hero3D.setTheme)Hero3D.setTheme(x[3])};
+    if(PV.theme)PV.theme(x[2]);if(window.Hero3D&&Hero3D.setTheme)Hero3D.setTheme(x[3]);
+    var h=document.querySelector(".gbanner h2");if(h)h.textContent=CREW[t]||CREW.ace;
+    if(window.pvRethumb)pvRethumb()};
   window.pvModelPart=function(i){return PV.modelPart(i)};
   window.pvVpnSettings=function(){PV.vpnSettings()};
   ["pvOpenData","pvResetWarp","pvImportHapp","pvRestartAdmin","pvDiagnose","pvResetNetwork"].forEach(function(n){window[n]=function(){return Promise.resolve()}});

@@ -37,6 +37,11 @@ html[data-theme="lava"]{
 }
 html[data-theme="lava"] .power:not(.stage){border:2px solid #ff7a00}
 html[data-theme="lava"] .pill,html[data-theme="lava"] .chg{text-transform:uppercase;letter-spacing:.06em}
+/* the lava picture is bright orange at the top: page titles and the line under them go dark there */
+html[data-theme="lava"] .page>h1,html[data-theme="lava"] .page>.inner>h1{color:#140a02}
+html[data-theme="lava"] .page>h1 em,html[data-theme="lava"] .page>.inner>h1 em{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.45)}
+html[data-theme="lava"] .page>h1+p{color:#2a1404}
+html[data-theme="lava"] .page>h1+p b{color:#000}
 html[data-theme="indigo"]{
   --base:#0d0a26; --base2:#120e33; --text:#ffffff; --muted:#aaa4d8;
   --accent:#9a7dff; --accent2:#b9a6ff; --ok:#7fe3a5;
@@ -59,7 +64,7 @@ html[data-theme="indigo"]{
 .theme-b[data-theme-pick=indigo]::before{background:radial-gradient(circle at 35% 30%,#c5b6ff,#7d5cff 55%,#2b1f7a)}
 
 /* only a computer has these */
-#mProxy,#mTun,#engSeg,#adm,#happBtn,#logOpen,#diagAdm,#ltabs,#logs>.card:first-of-type,#subs>.card:last-child,.rail .logo,.rail .ver,
+#adm,#hBtnSw,#hero>.demo,#happBtn,#logOpen,#diagAdm,#ltabs,#logs>.card:first-of-type,#subs>.card:last-child,.rail .logo,.rail .ver,
 .ri[data-p=subs],.ri[data-p=stats],.ri[data-p=logs],.ri[data-p=shop]{display:none!important}
 
 body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
@@ -164,7 +169,9 @@ input.in.num{width:110px}
 .gbanner{background:linear-gradient(120deg,var(--sel),var(--base2))}
 .crest path:first-child{fill:var(--accent);stroke:var(--accent2)}
 .cmp button,.tryon button{background:radial-gradient(circle at 50% 38%,var(--sel),var(--base2) 72%)}
-.mem .av{background:radial-gradient(circle at 50% 40%,var(--sel),var(--base2))}
+.mem .av{background:radial-gradient(circle at 50% 40%,var(--sel),var(--base2));width:64px;height:92px;border-radius:16px;box-shadow:inset 0 0 0 1px var(--border)}
+.mem .av img.h3{object-fit:contain}
+.mem{gap:14px;padding:8px}
 .streak div.ok{background:var(--sel)}
 .gem{fill:var(--accent)}
 .badge.vpn{color:var(--accent)}

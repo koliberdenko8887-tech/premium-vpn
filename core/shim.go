@@ -60,12 +60,18 @@ type Settings struct {
 	XudpConc     int    `json:"xudpConc"`
 	XudpQuic     string `json:"xudpQuic"`
 	PingURL      string `json:"pingUrl"`
+	Tun          bool   `json:"tun"`         // VPN for the whole phone (Android's tunnel)
+	TunStack     string `json:"tunStack"`    // gvisor | system | mixed
+	SystemProxy  bool   `json:"systemProxy"` // a proxy on the phone (127.0.0.1) for apps that take one
+	ProxyPort    int    `json:"proxyPort"`
+	AllowLAN     bool   `json:"allowLan"`
 }
 
 func defaultSettings() Settings {
 	return Settings{LogLevel: "warning", RemoteDNS: "https://1.1.1.1/dns-query", IPMode: "ipv4_only", GlobalProxy: true, BypassLAN: true, Sniff: true,
 		FragPackets: "tlshello", FragLength: "100-200", FragInterval: "10-20", NoiseType: "rand", NoisePacket: "10-20", NoiseDelay: "10-16",
-		MuxConc: 8, XudpConc: 16, XudpQuic: "reject", PingURL: "https://www.gstatic.com/generate_204"}
+		MuxConc: 8, XudpConc: 16, XudpQuic: "reject", PingURL: "https://www.gstatic.com/generate_204",
+		Tun: true, TunStack: "gvisor", ProxyPort: 20808}
 }
 
 type physInfo struct{ Name string }

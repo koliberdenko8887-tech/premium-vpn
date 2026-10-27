@@ -81,7 +81,7 @@ func (c *ctlConn) log(format string, a ...any) {
 }
 
 // readFirst waits for the app's first message, which carries the tunnel descriptor.
-func readFirst(c *net.UnixConn) (int, []byte, error) {
+func readFirst(c *net.UnixConn, needFd bool) (int, []byte, error) {
 	buf := make([]byte, 64<<10)
 	oob := make([]byte, syscall.CmsgSpace(4*4))
 	fd := -1
@@ -101,7 +101,7 @@ func readFirst(c *net.UnixConn) (int, []byte, error) {
 		}
 		line = append(line, buf[:n]...)
 		if i := bytes.IndexByte(line, '\n'); i >= 0 {
-			if fd < 0 {
+			if fd < 0 && needFd {
 				return fd, nil, errors.New("приложение не передало туннель")
 			}
 			return fd, line[:i], nil
@@ -176,14 +176,31 @@ func singboxRunConfig(p *runParams, proxyOut map[string]any, apiPort int, secret
 		addr = append(addr, "fdfe:dcba:9876::1/126")
 	}
 	proxyOut["tag"] = "proxy"
+	var inbounds []any
+	if set.Tun {
+		stack := set.TunStack
+		if stack != "system" && stack != "mixed" {
+			stack = "gvisor"
+		}
+		inbounds = append(inbounds, map[string]any{"type": "tun", "tag": "tun", "address": addr, "mtu": 9000, "stack": stack})
+	}
+	if set.SystemProxy || !set.Tun { // SOCKS5 and HTTP proxy on the phone, for apps and Wi-Fi settings
+		listen := "127.0.0.1"
+		if set.AllowLAN {
+			listen = "0.0.0.0"
+		}
+		port := set.ProxyPort
+		if port < 1024 || port > 65535 {
+			port = 20808
+		}
+		inbounds = append(inbounds, map[string]any{"type": "mixed", "tag": "in", "listen": listen, "listen_port": port})
+	}
 	return map[string]any{
 		"log": map[string]any{"level": logLevelSB(set.LogLevel), "timestamp": true},
 		"dns": map[string]any{
 			"servers": []any{local, remote}, "rules": dnsRules, "final": final, "strategy": strategy,
 		},
-		"inbounds": []any{map[string]any{
-			"type": "tun", "tag": "tun", "address": addr, "mtu": 9000, "stack": "gvisor",
-		}},
+		"inbounds": inbounds,
 		"outbounds": []any{proxyOut, map[string]any{"type": "direct", "tag": "direct",
 			"domain_resolver": map[string]any{"server": "local", "strategy": strategy}}},
 		"route": map[string]any{"rules": rules, "final": routeFinal, "auto_detect_interface": true, "default_domain_resolver": "local"},
@@ -317,7 +334,10 @@ func runVPN(paramsPath string) error {
 		return fmt.Errorf("связь с приложением: %w", err)
 	}
 	ctl := &ctlConn{c: uc}
-	fd, first, err := readFirst(uc)
+	if !p.set.Tun && !p.set.SystemProxy {
+		p.set.Tun = true
+	}
+	fd, first, err := readFirst(uc, p.set.Tun)
 	if err != nil {
 		ctl.send(map[string]any{"t": "err", "m": err.Error()})
 		return err

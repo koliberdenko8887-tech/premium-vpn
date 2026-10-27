@@ -127,6 +127,9 @@ public class PvVpn extends VpnService {
             if (!"reconnecting".equals(VpnState.s)) VpnState.set("connecting", "");
             VpnState.traffic(0, 0, 0, 0);
 
+            final boolean vpn = set.optBoolean("tun", true) || !set.optBoolean("systemProxy", false);
+            ParcelFileDescriptor t = null;
+            if (vpn) { // «Прокси» alone needs no tunnel: the core only opens 127.0.0.1:port
             Builder b = new Builder();
             b.setSession("Премиум VPN");
             b.setMtu(9000);
@@ -141,10 +144,11 @@ public class PvVpn extends VpnService {
             apps(b, set);
             if (Build.VERSION.SDK_INT >= 29) b.setMetered(false);
             b.setConfigureIntent(PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_IMMUTABLE));
-            ParcelFileDescriptor t = b.establish();
+            t = b.establish();
             if (t == null) {
                 fail(my, "Android не дал включить VPN. Откройте приложение и разрешите");
                 return;
+            }
             }
             byte[] rnd = new byte[8];
             new SecureRandom().nextBytes(rnd);
@@ -166,7 +170,7 @@ public class PvVpn extends VpnService {
                 if (my != gen) {
                     pr.destroy();
                     ss.close();
-                    t.close();
+                    if (t != null) t.close();
                     return;
                 }
                 tun = t;
@@ -185,7 +189,7 @@ public class PvVpn extends VpnService {
                 sock = s;
                 sockOut = out;
             }
-            s.setFileDescriptorsForSend(new FileDescriptor[]{t.getFileDescriptor()});
+            if (t != null) s.setFileDescriptorsForSend(new FileDescriptor[]{t.getFileDescriptor()});
             out.write((Core.netState(this).toString() + "\n").getBytes("UTF-8"));
             out.flush();
             s.setFileDescriptorsForSend(null);
@@ -210,7 +214,7 @@ public class PvVpn extends VpnService {
                         retries = 0;
                     }
                     VpnState.set(st, "");
-                    if ("on".equals(st)) foreground("Защищено · " + clean(name));
+                    if ("on".equals(st)) foreground((vpn ? "Защищено · " : "Прокси 127.0.0.1:" + set.optInt("proxyPort", 20808) + " · ") + clean(name));
                     else if ("weak".equals(st)) foreground("Связь слабая · " + clean(name));
                 } else if ("err".equals(type)) {
                     fail(my, m.optString("m"));

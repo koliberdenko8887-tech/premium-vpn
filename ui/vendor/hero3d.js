@@ -995,7 +995,7 @@
 
   // ---------- snapshots for buttons and lists: one hidden renderer, a queue, a cache ----------
   var snapR = null, snapS = null, snapCam = null, cache = {}, order = [], queue = [], busy = false;
-  function snapKey(o, view) { return view + JSON.stringify(o); }
+  function snapKey(o, view) { return view + (H.tintOn.value ? H.tint.value.getHexString() : '') + JSON.stringify(o); } // the theme recolours the ninja
   H.snapCached = function (o, view) { return cache[snapKey(o, view)] || ''; };
   // alive(): is anybody still waiting for this picture (the button may be gone already)
   H.snap = function (o, view, cb, alive) {
@@ -1541,7 +1541,7 @@ MeshoptDecoder.decodeGltfBuffer = (target, count, size, source, mode, filter) =>
       var shm = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({ map: new T.CanvasTexture(sc), transparent: true, depthWrite: false }));
       shm.rotation.x = -PI / 2; shm.scale.set(HT * cfg.shw, HT * cfg.shw * .7, 1); shm.position.y = .003; shm.renderOrder = -1; root2.add(shm);
       var seed = root.H3D_SEED != null ? root.H3D_SEED : Math.random() * 10, st0 = 0, lastS = '';
-      function update(t, state) {
+      function update(t, state, nohop) {
         t += seed;
         var off = state === 'off', wait = state === 'wait', pose = state === 'pose', p = (t * 1.7) % 100;
         if (state !== lastS) { st0 = t; lastS = state; }
@@ -1551,7 +1551,8 @@ MeshoptDecoder.decodeGltfBuffer = (target, count, size, source, mode, filter) =>
         else if (pose) { br = Math.sin(t * 1.9); amp = .014; yaw = .12; }
         else { br = Math.sin(t * 1.9); amp = .016; yaw = Math.sin(t * .7) * .18; rol = Math.sin(t * 1.1) * .07; pit = -.04 + Math.max(0, Math.sin(t * 5.6)) * .05;
           bob = Math.abs(Math.sin(t * 3.0)) * (.5 + .35 * Math.sin(t * .4)) * (1 - Math.min(1, (t - st0) / 1.5) * .55) * k0; }
-        if (cfg.still) { pit = yaw = rol = bob = 0; amp *= .6; } // people just stand and breathe (0.17.2)
+        if (cfg.still) { pit = yaw = rol = bob = 0; amp *= .6; }
+        if (nohop) bob = 0; // «Прыжки героя» off // people just stand and breathe (0.17.2)
         if (uni) { uni.uHead.value.set(pit, yaw, rol); uni.uBr.value = br * amp; }
         holder.position.y = bob;
       }

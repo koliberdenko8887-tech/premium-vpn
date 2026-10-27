@@ -59,6 +59,24 @@ rep('n+" спит. Нажмите на героя, чтобы включить V
 rep('if(vis&&!busy&&!(S.diag&&S.diag.running)&&c.status!=="error"){var n=heroName(g.me);',
     'if(vis&&!busy&&!(S.diag&&S.diag.running)&&c.status!=="error"){var n=heroName(g.me),sel=S.servers.find(function(x){return x.id===S.selected})||S.servers[0];')
 
+# ---- hero and friends (0.2.2) ----
+rep('+(cost>0?". В черновике бесплатно, потом это будет стоить "+cost+" кристаллов":"")', '')
+rep("thumb(m[1],\"head\")", "thumb(m[1],\"body\")")
+rep("  function demo(){", """  // a new theme recolours the ninja: pictures in the lists are made again
+  window.pvRethumb=function(){heroKey="";gangKey="";shopKey="";
+    document.querySelectorAll("#hPick button").forEach(function(b){b.querySelector(".v").innerHTML=thumb(AV_PRESETS[b.dataset.i],"body")});
+    if(S)render()};
+  function demo(){""")
+# the Windows modes, as they exist on a phone: TUN = Android's VPN for the whole phone, «Прокси» = 127.0.0.1:port
+rep('<span class="ck"></span>Системный прокси</button>', '<span class="ck"></span>Прокси</button>')
+rep('title="Windows направляет в VPN браузеры и программы, которые берут настройки прокси. Права администратора не нужны."', 'title="SOCKS5 и HTTP-прокси на телефоне: 127.0.0.1 и порт из настроек"')
+rep("""            <button type="button" data-eng="singbox" title="TUN на sing-box: самый надёжный, рекомендуется">sing-box</button>
+            <button type="button" data-eng="xray" title="TUN на Xray: запасной вариант, как в Happ">Xray TUN</button>
+            <button type="button" data-eng="tun2proxy" title="TUN через tun2proxy: запасной вариант, как в Happ">tun2proxy</button>""",
+"""            <button type="button" data-eng="gvisor" title="Работает везде, рекомендуется">gVisor</button>
+            <button type="button" data-eng="system" title="Быстрее, но на некоторых телефонах не работает">Системный</button>
+            <button type="button" data-eng="mixed" title="Системный для TCP, gVisor для UDP">Смешанный</button>""")
+
 # ---- phone behaviour ----
 rep('$("chg").addEventListener("click",function(){show("servers")});', '$("chg").addEventListener("click",function(){if(window.pvSheet)pvSheet();else show("servers")});')
 rep("""$("pasteBtn").addEventListener("click",function(){if(navigator.clipboard&&navigator.clipboard.readText)navigator.clipboard.readText().then(function(t){$("addText").value=t}).catch(function(){toast("Нажмите в поле и Ctrl+V")});else toast("Нажмите в поле и Ctrl+V")});""",
