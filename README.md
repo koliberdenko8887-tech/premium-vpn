@@ -2,7 +2,7 @@
 
 Версия 0.1.0.
 
-**[Скачать приложение (APK)](https://github.com/koliberdenko8887-tech/premium-vpn/releases/download/v0.1.0/PremiumVPN.apk)**
+**[Скачать приложение (APK)](https://github.com/koliberdenko8887-tech/premium-vpn/raw/main/PremiumVPN.apk)**
 
 Откройте эту страницу на телефоне Android, нажмите ссылку, дождитесь загрузки и откройте файл «PremiumVPN.apk». Разрешите установку из этого источника, если Android попросит.
 
