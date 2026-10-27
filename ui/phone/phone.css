@@ -119,7 +119,8 @@ main{height:100%}
 #appSheet .row .btn{flex:1;padding:12px}
 
 /* inner pages */
-.inner{padding:20px 14px 0!important;gap:14px}
+.inner{padding:20px 14px calc(100px + env(safe-area-inset-bottom,0px))!important;gap:14px}
+.inner>*{flex-shrink:0}
 .inner h1{font-size:24px}
 .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .tile{min-height:104px;padding:12px}
@@ -156,3 +157,14 @@ input.in.num{width:110px}
 .fld .row .btn{flex:1 1 auto}
 .toast{top:calc(14px + env(safe-area-inset-top,0px));max-width:92%}
 ::-webkit-scrollbar{width:0;height:0}
+
+/* everything that was red on Windows follows the theme */
+.hbig{background:radial-gradient(ellipse at 50% 88%,var(--glow),transparent 62%),radial-gradient(circle at 50% 35%,var(--sel),var(--base2) 72%)}
+.gstage{background:radial-gradient(ellipse at 50% 85%,var(--glow),transparent 60%),var(--panel)}
+.gbanner{background:linear-gradient(120deg,var(--sel),var(--base2))}
+.crest path:first-child{fill:var(--accent);stroke:var(--accent2)}
+.cmp button,.tryon button{background:radial-gradient(circle at 50% 38%,var(--sel),var(--base2) 72%)}
+.mem .av{background:radial-gradient(circle at 50% 40%,var(--sel),var(--base2))}
+.streak div.ok{background:var(--sel)}
+.gem{fill:var(--accent)}
+.badge.vpn{color:var(--accent)}

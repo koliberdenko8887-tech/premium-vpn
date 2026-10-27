@@ -850,7 +850,7 @@
 
   function renderer(canvas, w, h) {
     var r = new T.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, preserveDrawingBuffer: !!w });
-    r.setPixelRatio(w ? 1 : Math.min(2, root.devicePixelRatio || 1));
+    r.setPixelRatio(w ? (root.H3D_SNAP_DPR || 1) : Math.min(root.H3D_MAX_DPR || 2, root.devicePixelRatio || 1));
     r.toneMapping = T.ACESFilmicToneMapping; r.toneMappingExposure = 1; r.outputColorSpace = T.SRGBColorSpace;
     r.shadowMap.enabled = true; r.shadowMap.type = T.PCFSoftShadowMap;
     r.setClearColor(0x000000, 0);
@@ -874,6 +874,10 @@
       else { g.fillStyle = '#ffd34d'; g.shadowColor = 'rgba(255,210,80,.9)'; g.shadowBlur = 16; g.beginPath(); for (var i = 0; i < 10; i++) { var a = -PI / 2 + i * PI / 5, r = i % 2 ? 18 : 46; g.lineTo(64 + Math.cos(a) * r, 64 + Math.sin(a) * r); } g.fill(); }
     });
   }
+  // colours of the button platform and of the hero's red parts, per app theme (Hero3D.setTheme)
+  var TH = H.theme = { on: '#e3262f', off: '#5c1c22', glow: '#ff2030', ring: '#ffffff' };
+  H.tint = { value: new T.Color('#ffffff') }; H.tintOn = { value: 0 };
+  H.setTheme = function (o) { for (var k in o) TH[k] = o[k]; H.tintOn.value = o.tint ? 1 : 0; if (o.tint) H.tint.value.set(o.tint); };
   function platform() {
     var G = new T.Group();
     var body = H.mesh(H.geo('plat', function () { return new T.LatheGeometry([[0, 0], [.86, 0], [.9, .03], [.9, .15], [.86, .19], [0, .19]].map(function (p) { return new T.Vector2(p[0], p[1]); }), 72); }), new T.MeshPhysicalMaterial({ color: '#e3262f', roughness: .22, clearcoat: 1, clearcoatRoughness: .08, emissive: new T.Color('#ff2030'), emissiveIntensity: 0 }));
@@ -957,8 +961,8 @@
       L.key.intensity = off ? 1.1 : on ? 2.1 : 1.6; L.hemi.intensity = off ? .28 : .55; L.rim.intensity = off ? .9 : 1.6;
       L.key.color.set(off ? 0xc9d4ff : 0xfff0e4); r.toneMappingExposure = off ? .82 : 1;
       if (plat) {
-        var m = plat.body.material; m.color.set(off ? '#5c1c22' : '#e3262f');
-        m.emissiveIntensity = on ? .18 + .1 * Math.sin(t * 3) : wait ? .1 + .1 * Math.sin(t * 8) : 0;
+        var m = plat.body.material; m.color.set(off ? TH.off : TH.on); m.emissive.set(TH.glow); m.envMapIntensity = TH.env == null ? 1 : TH.env; m.clearcoat = TH.coat == null ? 1 : TH.coat; plat.ringM.color.set(TH.ring);
+        m.emissiveIntensity = (on ? .18 + .1 * Math.sin(t * 3) : wait ? .1 + .1 * Math.sin(t * 8) : 0) * (TH.gi == null ? 1 : TH.gi);
         plat.ringM.opacity = off ? .35 : wait ? .5 + .4 * Math.sin(t * 8) : .95;
       }
       chars.forEach(function (c) {
@@ -1039,7 +1043,7 @@
   var S = null, clips = {}, HT = (D.rig.box[1][1] - D.rig.box[0][1]) / 100;
   function b64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }
   // the skin texture starts loading at once, so snapshots taken later are not black
-  var img = new Image(), tex = new T.Texture(img); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4; tex.flipY = true;
+  var img = new Image(), tex = new T.Texture(img); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 8; tex.flipY = true;
   img.onload = function () { tex.needsUpdate = true; }; img.src = D.jpg;
   var mat = new T.MeshStandardMaterial({ map: tex, roughness: .6, metalness: 0, envMapIntensity: .85 });
   function decode() {
@@ -1486,12 +1490,18 @@ MeshoptDecoder.decodeGltfBuffer = (target, count, size, source, mode, filter) =>
   function makeStatic(D) {
     var cfg = D.cfg, S = null, HT = cfg.ht;
     function b64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }
-    var img = new Image(), tex = new T.Texture(img); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4; tex.flipY = true;
+    var img = new Image(), tex = new T.Texture(img); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 8; tex.flipY = true;
     img.onload = function () { tex.needsUpdate = true; }; img.src = D.jpg;
     var uni = null;
     function fx(v) { return v.toFixed(2); }
     var mat = new T.MeshStandardMaterial({ map: tex, roughness: cfg.rough, metalness: 0, envMapIntensity: .85 });
     mat.onBeforeCompile = function (sh) {
+      if (D.id === 'ninja') { // the red button and headband take the theme's colour
+        sh.uniforms.uTint = H.tint; sh.uniforms.uTintOn = H.tintOn;
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uTint;uniform float uTintOn;')
+          .replace('#include <map_fragment>', '#include <map_fragment>\nif(uTintOn>0.5){vec3 c0=diffuseColor.rgb;float rd=clamp((c0.r-max(c0.g,c0.b))/max(c0.r,1e-3),0.0,1.0);' +
+            'float tw=smoothstep(0.45,0.8,rd);diffuseColor.rgb=mix(c0,uTint*(c0.r*1.15+0.02),tw);}');
+      }
       sh.uniforms.uHead = { value: new T.Vector3() }; sh.uniforms.uBr = { value: 0 }; sh.uniforms.uPiv = { value: new T.Vector3(cfg.px || 0, cfg.neck, cfg.pz || 0) }; uni = sh.uniforms;
       var hw = 'smoothstep(' + fx(cfg.n0) + ',' + fx(cfg.n1) + ',position.y)*(1.0-smoothstep(' + fx(cfg.a0) + ',' + fx(cfg.a1) + ',abs(position.x)))';
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform vec3 uHead;uniform float uBr;uniform vec3 uPiv;\n' +
@@ -1500,6 +1510,7 @@ MeshoptDecoder.decodeGltfBuffer = (target, count, size, source, mode, filter) =>
           'float cw=smoothstep(' + fx(cfg.c0) + ',' + fx(cfg.c1) + ',position.y)*(1.0-smoothstep(' + fx(cfg.c2) + ',' + fx(cfg.c3) + ',position.y));transformed.xz*=1.0+uBr*cw;')
         .replace('#include <beginnormal_vertex>', 'vec3 objectNormal=normal;objectNormal=rotE(uHead*(' + hw + '))*objectNormal;');
     };
+    mat.customProgramCacheKey = function () { return 'st' + (D.id || '') + JSON.stringify(cfg); }; // each figure has its own shader
     function decode() {
       if (S) return S;
       if (D.mz) return (S = decodeMz());
@@ -1554,6 +1565,7 @@ MeshoptDecoder.decodeGltfBuffer = (target, count, size, source, mode, filter) =>
   // registers the people once window.GIRLS3D = {models:{id:{bin,jpg,rig,clips,alias}}} is there
   root.Hero3DLoadModels = function () {
     if (DATA || !root.GIRLS3D || !root.GIRLS3D.models) return; DATA = root.GIRLS3D.models;
+    Object.keys(DATA).forEach(function (id) { DATA[id].id = id; });
     Object.keys(DATA).forEach(function (id) { made[id] = make(DATA[id]); });
     root.Hero3DModels.meshy = function (o) { var id = DATA[o.char] ? o.char : Object.keys(DATA)[0]; return (made[id] = made[id] || make(DATA[id]))(o); };
   };

@@ -3,8 +3,14 @@
 (function(){
   var PV=window.PV||demoPV();
   var VERSION=(PV.version&&PV.version())||"демо";
-  window.PV_THEMES=[["ace","Красный туз","#060606"],["ocean","Океан и пламя","#0f2035"],["bordo","Бордо и роса","#5a1027"],
-    ["gold","Чёрное золото","#0b0b0c"],["lava","Лава","#0a0a0a"],["indigo","Индиго","#0d0a26"]];
+  // [id, name, bar colour, 3D: platform on, platform off, glow, ring, colour of the hero's red parts]
+  window.PV_THEMES=[["ace","Красный туз","#060606",{on:"#9e0a1d",off:"#3a0e14",glow:"#ff1a33",gi:.45,ring:"#ffffff",env:.4,coat:.45,tint:""}],
+    ["ocean","Океан и пламя","#0f2035",{on:"#ff7a1f",off:"#22344a",glow:"#ff6a00",ring:"#f7f3ec",env:.4,coat:.45,tint:"#ff7a1f"}],
+    ["bordo","Бордо и роса","#5a1027",{on:"#e4dfe2",off:"#4a2532",glow:"#ffd6e0",ring:"#7d1a38",env:.4,coat:.45,tint:"#e9e4e7"}],
+    ["gold","Чёрное золото","#0b0b0c",{on:"#d4a94a",off:"#2e2618",glow:"#f2c14e",ring:"#1a1408",env:.4,coat:.45,tint:"#e0b55a"}],
+    ["lava","Лава","#0a0a0a",{on:"#ff6a00",off:"#3a2210",glow:"#ff5a00",ring:"#111111",env:.4,coat:.45,tint:"#ff7400"}],
+    ["indigo","Индиго","#0d0a26",{on:"#7d5cff",off:"#241d4d",glow:"#8f72ff",ring:"#ffffff",env:.4,coat:.45,tint:"#8466ff"}]];
+  window.H3D_MAX_DPR=3; // sharp people on phone screens
 
   // ---- store: servers, subscriptions, settings (localStorage, like 0.1.0) ----
   var DEF={autoConnect:false,autoReconnect:true,localDns:false,remoteDns:"https://1.1.1.1/dns-query",directDns:"",ipMode:"ipv4_only",
@@ -123,7 +129,8 @@
   window.pvResetStats=function(){PV.resetStats();return Promise.resolve()};
   window.pvLog=function(n){return Promise.resolve({name:n,text:PV.log()})};
   window.pvClearLogs=function(){PV.clearLogs();return Promise.resolve()};
-  window.pvTheme=function(t){var x=PV_THEMES.filter(function(q){return q[0]===t})[0];if(x&&PV.theme)PV.theme(x[2])};
+  window.pvTheme=function(t){var x=PV_THEMES.filter(function(q){return q[0]===t})[0];if(!x)return;
+    if(PV.theme)PV.theme(x[2]);if(window.Hero3D&&Hero3D.setTheme)Hero3D.setTheme(x[3])};
   window.pvModelPart=function(i){return PV.modelPart(i)};
   window.pvVpnSettings=function(){PV.vpnSettings()};
   ["pvOpenData","pvResetWarp","pvImportHapp","pvRestartAdmin","pvDiagnose","pvResetNetwork"].forEach(function(n){window[n]=function(){return Promise.resolve()}});
