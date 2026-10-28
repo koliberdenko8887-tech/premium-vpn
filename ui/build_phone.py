@@ -55,7 +55,7 @@ rep('var logName="connect"', 'var logName="core"')
 rep('$("subbar").innerHTML=sub?("<span>Подписка <b>"+esc(sub.title||"")+"</b></span>"+(sub.expire?"<span>до "+fmtDate(sub.expire).slice(0,5)+"</span>":"")):("<span>Бесплатный сервер <b>WARP</b></span>"+(S.settings.autoReconnect?"<span>авто ✓</span>":""));',
     '$("subbar").innerHTML=sub?("<span>Подписка <b>"+esc(sub.title||"")+"</b></span>"+(sub.expire?"<span>до "+fmtDate(sub.expire).slice(0,5)+"</span>":"")):("<span>Свои серверы</span>"+(S.settings.autoReconnect?"<span>авто ✓</span>":""));')
 rep('if(S.servers.length<2){', 'if(S.servers.length<2||S.servers[0].kind==="none"){')
-rep('n+" спит. Нажмите на героя, чтобы включить VPN"', '(sel.kind==="none"?n+" ждёт сервер. Добавьте подписку в разделе «Ещё» → «Подписки»":n+" спит. Нажмите на героя, чтобы включить VPN")')
+rep('n+(dancer(g)?" стоит и ждёт. Включите VPN, и он начнёт танцевать":" спит. Нажмите на героя, чтобы включить VPN")', '(sel.kind==="none"?n+" ждёт сервер. Добавьте подписку в разделе «Ещё» → «Подписки»":n+(dancer(g)?" стоит и ждёт. Включите VPN, и он начнёт танцевать":" спит. Нажмите на героя, чтобы включить VPN"))')
 rep('if(vis&&!busy&&!(S.diag&&S.diag.running)&&c.status!=="error"){var n=heroName(g.me);',
     'if(vis&&!busy&&!(S.diag&&S.diag.running)&&c.status!=="error"){var n=heroName(g.me),sel=S.servers.find(function(x){return x.id===S.selected})||S.servers[0];')
 
@@ -78,7 +78,7 @@ rep("""            <button type="button" data-eng="singbox" title="TUN на sing
             <button type="button" data-eng="mixed" title="Системный для TCP, gVisor для UDP">Смешанный</button>""")
 
 # ---- heroes of the themes (0.2.4): king = «Чёрное золото», astronaut = «Индиго», chibi = «Океан и пламя», ginger = «Лава» ----
-rep("['ninja', 'girl', 'coat', 'pink', 'dress', 'bomber', 'blazer', 'muscle'].indexOf(o.char)", "['ninja', 'king', 'astro', 'cute', 'ginger', 'girl', 'coat', 'pink', 'dress', 'bomber', 'blazer', 'muscle'].indexOf(o.char)")
+rep("['bboy', 'sport', 'ninja', 'girl', 'coat', 'pink', 'dress', 'bomber', 'blazer', 'muscle'].indexOf(o.char)", "['bboy', 'sport', 'ninja', 'king', 'astro', 'cute', 'ginger', 'girl', 'coat', 'pink', 'dress', 'bomber', 'blazer', 'muscle'].indexOf(o.char)")
 rep("""    P('girl', 25, { model: 'meshy', char: 'girl',""", """    P('king', 20, { model: 'meshy', char: 'king', age: 'adult', top: 'tee', topColor: '#17120f', bottom: 'jeans', bottomColor: '#17120f', shoes: 'sneakers', shoeColor: '#d6b262' }),
     P('astro', 20, { model: 'meshy', char: 'astro', age: 'adult', top: 'tee', topColor: '#f4f2ff', bottom: 'jeans', bottomColor: '#6a3cf0', shoes: 'sneakers', shoeColor: '#6a3cf0' }),
     P('cute', 20, { model: 'meshy', char: 'cute', age: 'adult', top: 'tee', topColor: '#ff7a00', bottom: 'jeans', bottomColor: '#0f2d5c', shoes: 'sneakers', shoeColor: '#ff7a00' }),

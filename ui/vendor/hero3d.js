@@ -1128,8 +1128,9 @@
         if (spine >= 0) bones[spine].quaternion.multiply(qa.setFromEuler(new T.Euler(-br, 0, 0)));
         if (chest >= 0) bones[chest].quaternion.multiply(qa.setFromEuler(new T.Euler(-br * .5, 0, 0)));
       }
-      if (off || wait) {
-        var e = off ? new T.Euler(.3, 0, .08) : new T.Euler(-.05, Math.sin(t * 1.7) * .5, 0);
+      // off: the dancer just stands (0.20.0); connecting: looks around
+      if (wait) {
+        var e = new T.Euler(-.05, Math.sin(t * 1.7) * .5, 0);
         bones[head].quaternion.multiply(qa.setFromEuler(e));
         
       }

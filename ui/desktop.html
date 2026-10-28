@@ -218,7 +218,7 @@ textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
 
 body.diag .power,body.diag .modes,body.diag .list .srv,body.diag .loc .chg{pointer-events:none;opacity:.5}
 /* game draft: Memoji-style people on the connect button, editor, gang and crystals (demo) */
-.power.stage{width:auto;height:clamp(200px,calc(100vh - 480px),720px);flex:none;min-width:min(100%,520px);max-width:100%;margin:0;padding:0;border-radius:28px;background:none;box-shadow:none;filter:none!important;animation:none!important;overflow:visible}
+.power.stage{width:auto;height:clamp(200px,calc(100vh - 530px),720px);flex:none;min-width:min(100%,520px);max-width:100%;margin:0;padding:0;border-radius:28px;background:none;box-shadow:none;filter:none!important;animation:none!important;overflow:visible}
 body:not(.on) .power.stage{box-shadow:none}
 .power.stage::after{display:none}
 .power.stage>svg{height:100%;width:auto;max-width:100%;display:block}
@@ -237,7 +237,7 @@ img.h3{width:100%;height:100%;object-fit:contain;display:block}
 .hstage{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;position:sticky;top:0}
 .hbig{width:100%;height:330px;display:flex;justify-content:center;border-radius:18px;background:radial-gradient(ellipse at 50% 88%,#4a141a,transparent 62%),radial-gradient(circle at 50% 35%,#2c1418,#141013 72%);border:1px solid var(--border)}
 .hbig>svg{height:100%;width:auto}
-.crowd{margin-top:-6px}.crowd[hidden],.moves[hidden]{display:none}
+.crowd{margin-top:-6px}.crowd[hidden],.moves[hidden],.pick[hidden]{display:none}.seg.moves{flex-wrap:wrap;justify-content:center;border-radius:18px}
 .hrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;margin-top:-6px;max-width:100%}.hrow .crowd{margin-top:0}
 .seg.moves{flex-wrap:wrap;justify-content:center;border-radius:16px;max-width:100%}.seg.moves button{padding:5px 10px}
 .pl.moves{margin-top:6px}
@@ -434,7 +434,8 @@ canvas.spd{width:100%;height:150px;display:block}
         </button>
         <div class="hrow">
           <div class="seg sm crowd" id="crowd" role="group" aria-label="Кто стоит на кнопке" hidden><button type="button" data-c="0">Один</button><button type="button" data-c="1">С друзьями</button></div>
-          <div class="seg sm moves" id="moves" role="group" aria-label="Что делает герой, когда VPN включён" hidden><button type="button" data-m="walk">Ходьба</button><button type="button" data-m="run">Бег</button><button type="button" data-m="idle">Стоит</button></div>
+          <div class="seg sm pick" id="heroPick" role="group" aria-label="Кто на кнопке" hidden><button type="button" data-h="bboy">Парень</button><button type="button" data-h="sport">Девушка</button></div>
+          <div class="seg sm moves" id="moves" role="group" aria-label="Что делает герой, когда VPN включён" hidden><button type="button" data-m="dance">Танец</button><button type="button" data-m="squat">Присед</button></div>
         </div>
         <div class="hint-c" id="hint"></div>
         <div class="err" id="err"></div>
@@ -506,7 +507,7 @@ canvas.spd{width:100%;height:150px;display:block}
         <div class="card hstage">
           <div class="hbig" id="hvBody"></div>
           <div class="pl" id="hState"><button type="button" data-st="off">Спит</button><button type="button" data-st="wait">Подключается</button><button type="button" data-st="on">Радуется</button></div>
-          <div class="pl moves" id="hMoves" hidden role="group" aria-label="Что делает герой, когда VPN включён"><button type="button" data-m="walk">Ходьба</button><button type="button" data-m="run">Бег</button><button type="button" data-m="idle">Стоит</button></div>
+          <div class="pl moves" id="hMoves" hidden role="group" aria-label="Что делает герой, когда VPN включён"><button type="button" data-m="dance">Танец</button><button type="button" data-m="squat">Присед</button></div>
           <input class="hname" id="hName" maxlength="24" placeholder="Придумайте имя герою" autocomplete="off" spellcheck="false">
           <div class="lvl"><div class="lt"><b id="hLvl">Уровень 1</b><small id="hXp"></small></div><div class="bar"><i id="hXpBar" style="width:0"></i></div>
             <small class="hint">Опыт копится, пока вы под защитой. Новые уровни открывают редкие вещи.</small></div>
@@ -669,7 +670,7 @@ canvas.spd{width:100%;height:150px;display:block}
     r.shoes = pick(o.shoes, ids(AV.shoes), DEF.shoes);
     r.shoeColor = col(o.shoeColor, DEF.shoeColor);
     r.extra = pick(o.extra, ids(AV.extras), DEF.extra);
-    if (o.model === 'meshy') { r.model = 'meshy'; r.char = ['ninja', 'girl', 'coat', 'pink', 'dress', 'bomber', 'blazer', 'muscle'].indexOf(o.char) >= 0 ? o.char : 'ninja'; } // the user's standing Meshy figures (the walking people were removed in 0.17.1)
+    if (o.model === 'meshy') { r.model = 'meshy'; r.char = ['bboy', 'sport', 'ninja', 'girl', 'coat', 'pink', 'dress', 'bomber', 'blazer', 'muscle'].indexOf(o.char) >= 0 ? o.char : 'bboy'; } // the user's standing Meshy figures (the walking people were removed in 0.17.1)
     if (typeof o.name === 'string') r.name = o.name.slice(0, 24);
     return r;
   }
@@ -1216,6 +1217,8 @@ canvas.spd{width:100%;height:150px;display:block}
   // ready-made heroes: the user's four rigged Meshy people (the drawn look is only the fallback without WebGL)
   var P = function (name, years, o) { o.key = name; return o; };
   var AV_PRESETS = [
+    P('bboy', 22, { model: 'meshy', char: 'bboy', age: 'adult', skin: '#e8b48f', hair: 'short', hairColor: '#17120f', top: 'jacket', topColor: '#1c1c22', bottom: 'joggers', bottomColor: '#1c1c22', shoes: 'sneakers', shoeColor: '#ffffff' }),
+    P('sport', 20, { model: 'meshy', char: 'sport', age: 'adult', build: 'slim', face: 'oval', skin: '#e8b48f', hair: 'bun', hairColor: '#3a2416', eyes: 'lashes', top: 'hoodie', topColor: '#f2b8cf', bottom: 'joggers', bottomColor: '#f2b8cf', shoes: 'sneakers', shoeColor: '#ffffff' }),
     P('ninja', 20, { model: 'meshy', char: 'ninja', age: 'adult', build: 'slim', face: 'oval', skin: '#f9d3b4', hair: 'short', hairColor: '#17120f', top: 'tee', topColor: '#17120f', bottom: 'jeans', bottomColor: '#17120f', shoes: 'sneakers', shoeColor: '#d10d24' }),
     P('girl', 25, { model: 'meshy', char: 'girl', age: 'adult', build: 'slim', face: 'oval', skin: '#f1c39f', hair: 'long', hairColor: '#4a2c1a', eyes: 'lashes', top: 'jacket', topColor: '#1c1c22', bottom: 'jeans', bottomColor: '#2f4b7c', shoes: 'sneakers', shoeColor: '#ffffff' }),
     P('coat', 25, { model: 'meshy', char: 'coat', age: 'adult', build: 'slim', face: 'oval', skin: '#f9d3b4', hair: 'wavy', hairColor: '#c9a063', eyes: 'lashes', top: 'jacket', topColor: '#e3a92c', bottom: 'jeans', bottomColor: '#17120f', shoes: 'boots', shoeColor: '#17120f' }),
@@ -1695,13 +1698,17 @@ document.head.insertAdjacentHTML("beforeend","<style>"+AVATAR_CSS+"</style>");
   function preset(n){return AV_PRESETS.filter(function(p){return p.key===n})[0]||AV_PRESETS[0]}
   function lookKey(o){var x=avNormalize(o);delete x.name;return JSON.stringify(x)}
   // a friend who looks exactly like your own hero steps aside for the next one
-  function friendsOf(n,me){var k=lookKey(me);return FRIENDS.filter(function(f){return lookKey(preset(f[1]))!==k}).slice(0,n)}
+  function friendsOf(n,me){var k=lookKey(me);var twin={bboy:"bomber",sport:"pink"}[me.char];return FRIENDS.filter(function(f){return lookKey(preset(f[1]))!==k&&f[1]!==twin}).slice(0,n)}
   function friendList(n,me){return friendsOf(n,me).map(function(f){return preset(f[1])})}
   function game(){var g={};try{g=JSON.parse(S.settings.game||"{}")||{}}catch(e){g={}}
     // v6 (0.15.0): the old heroes are gone; everyone starts once with the first Meshy person walking, alone on the button
-    var fresh=(g.v||0)<7,me=avNormalize(fresh?preset("ninja"):g.me);if(me.model!=="meshy")me=avNormalize(preset("ninja"));
-    return {v:7,me:me,mode:"body",friends:4,crowd:fresh?false:g.crowd!==false,move:MOVES[g.move]&&!fresh?g.move:"walk"}}
-  var MOVES={walk:"гуляет",run:"бегает",idle:"стоит рядом"};
+    // v8 (0.18.0): the dancing guy in the bomber jacket is everyone's hero once, alone on the button
+    var fresh=(g.v||0)<8,me=avNormalize(fresh?preset("bboy"):g.me);if(me.model!=="meshy")me=avNormalize(preset("bboy"));
+    return {v:8,me:me,mode:"body",friends:4,crowd:fresh?false:g.crowd!==false,move:MOVES[g.move]&&!fresh?g.move:"dance"}}
+  var MOVES={dance:"танцует",squat:"приседает"};
+  var DANCE={bboy:["Брейк","танцует брейк"],sport:["Тверк","танцует тверк"]};
+  function moveText(g){return g.move==="dance"&&DANCE[g.me.char]?DANCE[g.me.char][1]:MOVES[g.move]}
+  function dancer(g){return g.me.char==="bboy"||g.me.char==="sport"}
   function saveGame(g){return setOpt("game",JSON.stringify(g))}
   function heroName(o){return o.name||"Ваш герой"}
   var powerKey="",powerPlain=$("power").innerHTML,popNext=-1;
@@ -1719,10 +1726,12 @@ document.head.insertAdjacentHTML("beforeend","<style>"+AVATAR_CSS+"</style>");
         if(vis&&!st.heroHop)p.firstChild.classList.add("nohop")}
       if(page==="home")popNext=-1}
     $("crowd").hidden=!vis;document.querySelectorAll("#crowd button,#gCrowd button").forEach(function(b){b.classList.toggle("on",(b.dataset.c==="1")===g.crowd)});
-    $("moves").hidden=true; // the standing figures do not walk or run (0.17.1)
+    $("moves").hidden=!(vis&&G3&&dancer(g));$("heroPick").hidden=!(vis&&G3);
+    document.querySelectorAll("#heroPick button").forEach(function(b){b.classList.toggle("on",b.dataset.h===g.me.char)});
+    document.querySelectorAll('#moves button[data-m="dance"],#hMoves button[data-m="dance"]').forEach(function(b){b.textContent=DANCE[g.me.char]?DANCE[g.me.char][0]:"Танец"}); // only the dancer moves; the standing figures just breathe
     document.querySelectorAll("#moves button,#hMoves button").forEach(function(b){b.classList.toggle("on",b.dataset.m===g.move)});
     if(vis&&!busy&&!(S.diag&&S.diag.running)&&c.status!=="error"){var n=heroName(g.me);
-      $("hint").textContent=on?(g.crowd?"Все радуются":n+" "+(G3?MOVES[g.move]:"радуется"))+": вы под защитой"+(c.ip?" · IP "+c.ip+(c.loc&&C[c.loc]?", "+C[c.loc][0]:""):""):n+" спит. Нажмите на героя, чтобы включить VPN"}
+      $("hint").textContent=on?(g.crowd?"Все радуются":n+" "+(G3?moveText(g):"радуется"))+": вы под защитой"+(c.ip?" · IP "+c.ip+(c.loc&&C[c.loc]?", "+C[c.loc][0]:""):""):n+(dancer(g)?" стоит и ждёт. Включите VPN, и он начнёт танцевать":" спит. Нажмите на героя, чтобы включить VPN")}
   }
 
   // «Мой герой»: the editor works on a draft; «Сохранить героя» saves it
@@ -1832,6 +1841,9 @@ document.head.insertAdjacentHTML("beforeend","<style>"+AVATAR_CSS+"</style>");
       b.innerHTML='<span class="v">'+thumb(o,"body")+"</span><b>"+esc(t[1])+"</b><small>"+t[2]+GEM+" · ур. "+t[3]+"</small>";
       b.addEventListener("click",function(){tryOn=t[0];draft=null;show("hero");toast("Примеряем: "+t[1]+". Понравится — сохраните героя")});$("sTry").appendChild(b)});
   }
+  // «Парень / Девушка» under the button: the two dancers, each with every move
+  document.querySelectorAll("#heroPick button").forEach(function(b){b.addEventListener("click",function(e){e.stopPropagation();var g=game();
+    if(g.me.char===b.dataset.h)return;var nm=g.me.name;g.me=avNormalize(preset(b.dataset.h));if(nm)g.me.name=nm;powerKey="";saveGame(g)})});
   document.querySelectorAll("#crowd button,#gCrowd button").forEach(function(b){b.addEventListener("click",function(){var g=game(),c=b.dataset.c==="1";if(g.crowd===c)return;
     g.crowd=c;if(c)popNext=gPop=0;saveGame(g)})});
   // what the hero does on the button while the VPN is on
